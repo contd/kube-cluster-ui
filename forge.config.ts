@@ -37,6 +37,19 @@ const config: ForgeConfig = {
       })
     },
   ],
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'contd',
+          name: 'kube-cluster-ui'
+        },
+        prerelease: false,
+        draft: true
+      }
+    }
+  ],
   plugins: [
     new VitePlugin({
       // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.

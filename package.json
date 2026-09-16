@@ -28,6 +28,7 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.11.2",
     "@electron-forge/plugin-fuses": "^7.11.2",
     "@electron-forge/plugin-vite": "^7.11.2",
+    "@electron-forge/publisher-github": "^7.11.2",
     "@electron/fuses": "^1.8.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -43,6 +44,7 @@
     "bufferutil": "^4.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "lucide": "^1.45.0",
+    "update-electron-app": "^3.3.0",
     "utf-8-validate": "^6.0.6",
     "yaml": "^2.9.1"
   }

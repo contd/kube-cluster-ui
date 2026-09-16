@@ -3,6 +3,10 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import * as k8s from '@kubernetes/client-node';
+import { updateElectronApp } from 'update-electron-app';
+
+// Handle updates and auto-restart the app when a new version is available.
+updateElectronApp();
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {

@@ -7,6 +7,7 @@ import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
+import { app } from 'electron';
 
 const config: ForgeConfig = {
   packagerConfig: {
@@ -43,7 +44,8 @@ const config: ForgeConfig = {
       config: {
         repository: {
           owner: 'contd',
-          name: 'kube-cluster-ui'
+          name: 'kube-cluster-ui',
+          appId: 'com.contd.kube-cluster-ui',
         },
         prerelease: false,
         draft: true

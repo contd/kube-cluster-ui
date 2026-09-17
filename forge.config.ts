@@ -8,10 +8,14 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { app } from 'electron';
+import path from 'node:path';
+
+const customIconPath = path.resolve(__dirname, 'src', 'icon');
 
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
+    icon: customIconPath,
     // osxSign: {
     //   identity: process.env.APPLE_SIGNING_IDENTITY,
     //   hardenedRuntime: true,
@@ -26,20 +30,21 @@ const config: ForgeConfig = {
   },
   rebuildConfig: {},
   makers: [
-		new MakerSquirrel({}),
+		new MakerSquirrel({
+      setupIcon: path.resolve(__dirname, 'src', 'icon.ico'),
+    }),
     {
       name: '@electron-forge/maker-zip',
       platforms: ['win64', 'linux'],
       config: {
-        // the config can be an object
+        icon: path.resolve(__dirname, 'src', 'icon.ico'),
       }
     },
     {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
       config: () => ({
-        // it can also be a function taking the currently built arch
-        // as a parameter and returning a config object, e.g.
+        icon: path.resolve(__dirname, 'src', 'icon.icns'),
       })
     },
   ],

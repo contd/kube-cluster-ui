@@ -463,6 +463,20 @@ const registerKubernetesHandlers = () => {
   );
 };
 
+const appIconPath = (platform: NodeJS.Platform): string => {
+  const basePath = app.getAppPath();
+
+  if (platform === 'win32') {
+    return path.join(basePath, 'src', 'icon.ico');
+  }
+
+  if (platform === 'darwin') {
+    return path.join(basePath, 'src', 'icon.icns');
+  }
+
+  return path.join(basePath, 'src', 'icon.png');
+};
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -472,6 +486,7 @@ const createWindow = () => {
     height: 920,
     title: 'Kube Cluster UI',
     backgroundColor: '#f6f7f9',
+    icon: appIconPath(process.platform),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },

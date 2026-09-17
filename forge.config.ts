@@ -12,12 +12,17 @@ import { app } from 'electron';
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
-    osxSign: {},
-    osxNotarize: {
-      appleId: process.env.APPLE_ID || '',
-      appleIdPassword: process.env.APPLE_PASSWORD || '',
-      teamId: process.env.APPLE_TEAM_ID || ''
-    },
+    // osxSign: {
+    //   identity: process.env.APPLE_SIGNING_IDENTITY,
+    //   hardenedRuntime: true,
+    //   gatekeeperAssess: false,
+    // },
+
+    // osxNotarize: {
+    //   appleId: process.env.APPLE_ID!,
+    //   appleIdPassword: process.env.APPLE_ID_PASSWORD!,
+    //   teamId: process.env.APPLE_TEAM_ID!,
+    // },
   },
   rebuildConfig: {},
   makers: [

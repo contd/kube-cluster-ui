@@ -1,0 +1,101 @@
+# Kube Cluster UI
+
+## Build and Package for Windows
+
+This project is configured with Electron Forge and includes the Squirrel Windows maker in [forge.config.ts](forge.config.ts). On a Windows machine, you can build and package the app into a Windows installer or distributable zip.
+
+> Important: the Windows installer is produced on a Windows machine. The `MakerSquirrel` configuration is Windows-specific and is not meant to be run from a non-Windows host for native Windows packaging.
+
+### Prerequisites
+
+Before building, install:
+
+- Node.js LTS (18+ recommended; current project targets Electron 44)
+- Git for Windows
+- A Windows environment such as Windows 10/11, or a Windows build VM/container
+- Administrator access if you need to install dependencies or sign the installer
+
+### Install dependencies
+
+From the project root:
+
+```powershell
+npm install
+```
+
+If you are using a fresh checkout and the dependency tree is not yet restored, this will install Electron, Vite, and the Forge makers used by the project.
+
+### Run locally during development
+
+```powershell
+npm start
+```
+
+This starts the Electron app in development mode.
+
+### Create a packaged app without a Windows installer
+
+This step produces an app bundle for the current platform without creating the final installer:
+
+```powershell
+npm run package
+```
+
+The output is typically placed in a folder under `out/`.
+
+### Create a Windows installer
+
+To build the Windows distributable using the configured Forge makers:
+
+```powershell
+npm run make
+```
+
+This uses Electron Forge with the Squirrel maker configured in [forge.config.ts](forge.config.ts). On Windows, this produces the installer artifacts in the `out/make` directory, typically under a path similar to:
+
+```text
+out\make\squirrel.windows\x64\
+```
+
+The generated files usually include:
+
+- the `.exe` installer
+- a `.nupkg` package
+- a ZIP archive if the project is configured to emit one
+
+### Build a release artifact from the command line
+
+If you want to trigger a package build in a CI or release script, you can run:
+
+```powershell
+npm run make
+```
+
+or, for a non-installer package only:
+
+```powershell
+npm run package
+```
+
+### Common troubleshooting
+
+- If `npm install` fails, make sure Node.js is installed and `npm` is on your `PATH`.
+- If the Windows build fails, verify you are running the commands on a Windows machine.
+- If the app does not launch after packaging, open the generated app and confirm the required runtime dependencies are present.
+- If you need signing for a production release, add code-signing configuration before publishing the installer.
+
+### Notes
+
+- The project defines `@electron-forge/maker-squirrel` in [forge.config.ts](forge.config.ts), which is the Windows installer generator.
+- The project also includes a GitHub publisher configuration in the same Forge config for release publishing, but the installer creation itself is driven by `npm run make`.
+
+---
+
+## Useful commands summary
+
+```powershell
+npm install
+npm start
+npm run package
+npm run make
+```

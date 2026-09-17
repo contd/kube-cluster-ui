@@ -16,24 +16,48 @@ if (started) {
 const defaultKubeconfigPath = '/Users/jason/apex/kubeconfig';
 const settingsFileName = 'settings.json';
 
-const resolveDefaultKubeconfigPath = async (): Promise<string> => {
+const resolveKubeconfigCandidates = async (): Promise<string[]> => {
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  const envKubeconfig = process.env.KUBECONFIG || '';
+
   const candidatePaths = [
-    defaultKubeconfigPath,
+    ...envKubeconfig
+      .split(path.delimiter)
+      .map((value) => value.trim())
+      .filter(Boolean),
     homeDir ? path.join(homeDir, '.kube', 'config') : '',
     homeDir ? path.join(homeDir, 'kubeconfig') : '',
+    defaultKubeconfigPath,
   ].filter(Boolean);
 
-  for (const candidate of candidatePaths) {
+  const uniqueCandidates = [...new Set(candidatePaths)];
+  const resolvedFiles: string[] = [];
+
+  for (const candidate of uniqueCandidates) {
     try {
-      await fs.access(candidate);
-      return candidate;
+      const stats = await fs.stat(candidate);
+      if (stats.isFile()) {
+        resolvedFiles.push(candidate);
+        continue;
+      }
+
+      if (stats.isDirectory()) {
+        const nestedFiles = await walkFiles(candidate);
+        for (const nestedFile of nestedFiles) {
+          resolvedFiles.push(nestedFile);
+        }
+      }
     } catch {
-      // Keep looking for the first valid kubeconfig path.
+      // Ignore missing candidates.
     }
   }
 
-  return homeDir ? path.join(homeDir, '.kube', 'config') : defaultKubeconfigPath;
+  return [...new Set(resolvedFiles)];
+};
+
+const resolveDefaultKubeconfigPath = async (): Promise<string> => {
+  const candidates = await resolveKubeconfigCandidates();
+  return candidates[0] || defaultKubeconfigPath;
 };
 
 const resourceMap = {
@@ -152,20 +176,7 @@ const readContextsFromFile = async (filePath: string): Promise<KubeContext[]> =>
 
 const scanKubeContexts = async (): Promise<KubeContext[]> => {
   try {
-    const kubeconfigPath = await resolveDefaultKubeconfigPath();
-
-    let filePaths: string[];
-    try {
-      const stats = await fs.stat(kubeconfigPath);
-      filePaths = stats.isFile()
-        ? [kubeconfigPath]
-        : stats.isDirectory()
-          ? await walkFiles(kubeconfigPath)
-          : [];
-    } catch {
-      filePaths = [];
-    }
-
+    const filePaths = await resolveKubeconfigCandidates();
     const contexts = (
       await Promise.all(filePaths.map(readContextsFromFile))
     ).flat();

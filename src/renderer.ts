@@ -51,12 +51,34 @@ type Snapshot = {
   resources: Record<ResourceKind, KubeResource[]>;
 };
 
+type ClusterContext = {
+  id: string;
+  name: string;
+  cluster: string;
+  user: string;
+  namespace: string;
+  filePath: string;
+  fileName: string;
+  isCurrent: boolean;
+};
+
 type KubeApi = {
-  getSnapshot: (namespace: string) => Promise<Snapshot>;
+  getContexts: () => Promise<{
+    defaultPath: string;
+    contexts: ClusterContext[];
+    selectedContextId: string;
+  }>;
+  setContext: (contextId: string) => Promise<{
+    defaultPath: string;
+    contexts: ClusterContext[];
+    selectedContextId: string;
+  }>;
+  getSnapshot: (namespace: string, contextId?: string) => Promise<Snapshot>;
   getResource: (
     kind: ResourceKind,
     namespace: string,
     name: string,
+    contextId?: string,
   ) => Promise<KubeResource>;
 };
 
@@ -132,6 +154,8 @@ const state = {
   selectedResourceId: '',
   namespace: 'all',
   query: '',
+  selectedContextId: '',
+  contexts: [] as ClusterContext[],
   snapshot: createDemoSnapshot(),
   loading: true,
   error: '',
@@ -566,6 +590,10 @@ function namespaceOptions(): string[] {
   return ['all', ...Array.from(new Set(namespaces)).sort()];
 }
 
+function contextLabel(context: ClusterContext): string {
+  return context.name || context.fileName || 'Unknown context';
+}
+
 function healthSummary() {
   const pods = getResources('pods');
   const nodes = getResources('nodes');
@@ -638,6 +666,22 @@ function render() {
                 ? 'Connected via kubectl'
                 : 'Demo data'
           }
+        </div>
+
+        <div class="context-picker">
+          <label class="context-control">
+            <span>Server</span>
+            <select id="context-select">
+              ${state.contexts.length
+                ? state.contexts
+                    .map((context) => {
+                      const selected = context.id === state.selectedContextId ? 'selected' : '';
+                      return `<option value="${context.id}" ${selected}>${escapeHtml(contextLabel(context))}</option>`;
+                    })
+                    .join('')
+                : '<option value="">No contexts found</option>'}
+            </select>
+          </label>
         </div>
 
         <nav class="navigation">
@@ -927,6 +971,29 @@ function bindEvents() {
     });
   });
 
+  document.querySelector<HTMLSelectElement>('#context-select')?.addEventListener('change', async (event) => {
+    const target = event.target as HTMLSelectElement;
+    const nextContextId = target.value;
+    if (!nextContextId || nextContextId === state.selectedContextId) {
+      return;
+    }
+
+    try {
+      if (!window.kubeApi) {
+        throw new Error('Preload API is unavailable.');
+      }
+
+      const result = await window.kubeApi.setContext(nextContextId);
+      state.contexts = result.contexts;
+      state.selectedContextId = result.selectedContextId;
+      await loadSnapshot();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown context error.';
+      state.error = `Unable to switch cluster context: ${message}`;
+      render();
+    }
+  });
+
   document.querySelectorAll<HTMLTableRowElement>('tbody tr').forEach((row) => {
     row.addEventListener('click', () => {
       state.selectedResourceId = row.dataset.resourceId || '';
@@ -973,6 +1040,26 @@ function bindEvents() {
   });
 }
 
+async function loadContexts() {
+  try {
+    if (!window.kubeApi) {
+      throw new Error('Preload API is unavailable.');
+    }
+
+    const result = await window.kubeApi.getContexts();
+    state.contexts = result.contexts;
+
+    if (result.selectedContextId) {
+      state.selectedContextId = result.selectedContextId;
+    } else if (state.contexts[0]) {
+      state.selectedContextId = state.contexts[0].id;
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown context error.';
+    state.error = `Unable to load kube contexts: ${message}`;
+  }
+}
+
 async function loadSnapshot() {
   state.loading = true;
   state.error = '';
@@ -983,7 +1070,7 @@ async function loadSnapshot() {
       throw new Error('Preload API is unavailable.');
     }
 
-    const snapshot = await window.kubeApi.getSnapshot(state.namespace);
+    const snapshot = await window.kubeApi.getSnapshot(state.namespace, state.selectedContextId);
     if (snapshot.error) {
       state.snapshot = createDemoSnapshot();
       state.error = `Using demo data because kubectl could not load the cluster: ${snapshot.error}`;
@@ -1346,4 +1433,7 @@ function event(
   };
 }
 
-void loadSnapshot();
+void (async () => {
+  await loadContexts();
+  await loadSnapshot();
+})();

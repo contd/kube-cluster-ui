@@ -1,8 +1,6 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { MakerSquirrel } from '@electron-forge/maker-squirrel';
 // import { MakerZIP } from '@electron-forge/maker-zip';
-// import { MakerDeb } from '@electron-forge/maker-deb';
-// import { MakerRpm } from '@electron-forge/maker-rpm';
 // import { MakerDMG } from '@electron-forge/maker-dmg';
 import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
@@ -35,7 +33,7 @@ const config: ForgeConfig = {
     }),
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['win64', 'linux'],
+      platforms: ['win64', 'linux', 'darwin'],
       config: {
         icon: path.resolve(__dirname, 'src', 'icon.ico'),
       }

@@ -16,6 +16,26 @@ if (started) {
 const defaultKubeconfigPath = '/Users/jason/apex/kubeconfig';
 const settingsFileName = 'settings.json';
 
+const resolveDefaultKubeconfigPath = async (): Promise<string> => {
+  const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+  const candidatePaths = [
+    defaultKubeconfigPath,
+    homeDir ? path.join(homeDir, '.kube', 'config') : '',
+    homeDir ? path.join(homeDir, 'kubeconfig') : '',
+  ].filter(Boolean);
+
+  for (const candidate of candidatePaths) {
+    try {
+      await fs.access(candidate);
+      return candidate;
+    } catch {
+      // Keep looking for the first valid kubeconfig path.
+    }
+  }
+
+  return homeDir ? path.join(homeDir, '.kube', 'config') : defaultKubeconfigPath;
+};
+
 const resourceMap = {
   nodes: 'nodes',
   pods: 'pods',
@@ -132,7 +152,20 @@ const readContextsFromFile = async (filePath: string): Promise<KubeContext[]> =>
 
 const scanKubeContexts = async (): Promise<KubeContext[]> => {
   try {
-    const filePaths = await walkFiles(defaultKubeconfigPath);
+    const kubeconfigPath = await resolveDefaultKubeconfigPath();
+
+    let filePaths: string[];
+    try {
+      const stats = await fs.stat(kubeconfigPath);
+      filePaths = stats.isFile()
+        ? [kubeconfigPath]
+        : stats.isDirectory()
+          ? await walkFiles(kubeconfigPath)
+          : [];
+    } catch {
+      filePaths = [];
+    }
+
     const contexts = (
       await Promise.all(filePaths.map(readContextsFromFile))
     ).flat();
@@ -346,10 +379,11 @@ const readResource = async (
 
 const registerKubernetesHandlers = () => {
   ipcMain.handle('cluster:getContexts', async () => {
+    const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
     const { contexts, selectedContext } = await resolveSelectedContext();
 
     return {
-      defaultPath: defaultKubeconfigPath,
+      defaultPath: resolvedKubeconfigPath,
       contexts,
       selectedContextId: selectedContext?.id || '',
     };
@@ -358,6 +392,7 @@ const registerKubernetesHandlers = () => {
   ipcMain.handle(
     'cluster:setContext',
     async (_event, contextId: string) => {
+      const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
       const { contexts, selectedContext } =
         await resolveSelectedContext(contextId);
 
@@ -368,7 +403,7 @@ const registerKubernetesHandlers = () => {
       }
 
       return {
-        defaultPath: defaultKubeconfigPath,
+        defaultPath: resolvedKubeconfigPath,
         contexts,
         selectedContextId: selectedContext?.id || '',
       };
@@ -379,11 +414,12 @@ const registerKubernetesHandlers = () => {
     'cluster:getSnapshot',
     async (_event, namespace = 'all', contextId = '') => {
       try {
+        const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
         const { selectedContext } = await resolveSelectedContext(contextId);
 
         if (!selectedContext) {
           throw new Error(
-            `No kubeconfig contexts found in ${defaultKubeconfigPath}.`,
+            `No kubeconfig contexts found in ${resolvedKubeconfigPath}.`,
           );
         }
 
@@ -448,11 +484,12 @@ const registerKubernetesHandlers = () => {
         throw new Error(`Unsupported Kubernetes resource kind: ${kind}`);
       }
 
+      const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
       const { selectedContext } = await resolveSelectedContext(contextId);
 
       if (!selectedContext) {
         throw new Error(
-          `No kubeconfig contexts found in ${defaultKubeconfigPath}.`,
+          `No kubeconfig contexts found in ${resolvedKubeconfigPath}.`,
         );
       }
 

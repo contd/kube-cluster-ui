@@ -33,7 +33,7 @@ const config: ForgeConfig = {
     }),
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['win64', 'linux', 'darwin'],
+      platforms: ['win32', 'win64', 'linux', 'darwin'],
       config: {
         icon: path.resolve(__dirname, 'src', 'icon.ico'),
       }
@@ -44,6 +44,24 @@ const config: ForgeConfig = {
       config: () => ({
         icon: path.resolve(__dirname, 'src', 'icon.icns'),
       })
+    },
+    {
+      name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
+      config: {
+        options: {
+          icon: path.resolve(__dirname, 'src', 'icon.png'),
+        },
+      },
+    },
+    {
+      name: '@pengx17/electron-forge-maker-appimage',
+      platforms: ['linux'],
+      config: {
+        options: {
+          icon: path.resolve(__dirname, 'src', 'icon.png'),
+        },
+      },
     },
   ],
   publishers: [

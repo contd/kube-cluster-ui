@@ -1,0 +1,50 @@
+name: Build Electron App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        # Run on both Windows and Linux environments
+        os: [windows-latest, ubuntu-latest]
+    
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24 # Specify your project's Node version
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Linux build dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm fakeroot dpkg
+
+      - name: Run Build / Package Application
+        # This compiles web assets if you have a build step (e.g., React/Vue/Vite/Webpack)
+        run: npm run build --if-present
+
+      - name: Make Electron Binaries
+        # Executes Electron Forge's makers configured in package.json
+        run: npm run make
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-binaries-${{ matrix.os }}
+          path: out/make/**/*
+          if-no-files-found: error

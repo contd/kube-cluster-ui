@@ -51,6 +51,7 @@
   },
   "dependencies": {
     "@kubernetes/client-node": "^2.0.0",
+    "@pengx17/electron-forge-maker-appimage": "^1.2.1",
     "bufferutil": "^4.1.0",
     "electron-squirrel-startup": "^1.0.1",
     "lucide": "^1.45.0",

@@ -14,6 +14,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: customIconPath,
+    executableName: 'kube-cluster-ui',
     // osxSign: {
     //   identity: process.env.APPLE_SIGNING_IDENTITY,
     //   hardenedRuntime: true,

@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { nativeImage } from "electron";
 import started from 'electron-squirrel-startup';
 import * as k8s from '@kubernetes/client-node';
 import { updateElectronApp } from 'update-electron-app';
@@ -525,6 +526,10 @@ const appIconPath = (platform: NodeJS.Platform): string => {
   return path.join(basePath, 'src', 'icon.png');
 };
 
+const icon = nativeImage.createFromPath(
+  appIconPath(process.platform)
+);
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -534,7 +539,7 @@ const createWindow = () => {
     height: 920,
     title: 'Kube Cluster UI',
     backgroundColor: '#f6f7f9',
-    icon: appIconPath(process.platform),
+    icon: icon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -551,6 +556,20 @@ const createWindow = () => {
 
   mainWindow.setMenuBarVisibility(false);
 };
+
+ipcMain.handle('dark-mode:toggle', () => {
+  if (nativeTheme.shouldUseDarkColors) {
+    nativeTheme.themeSource = 'light'
+  } else {
+    nativeTheme.themeSource = 'dark'
+  }
+  return nativeTheme.shouldUseDarkColors
+})
+
+ipcMain.handle('dark-mode:system', () => {
+  nativeTheme.themeSource = 'system'
+})
+
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.

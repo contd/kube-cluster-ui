@@ -1,4 +1,5 @@
 import { createIcons, icons } from 'lucide';
+import YAML from 'yaml';
 // CSS is bundled by the build tool; TypeScript has no declaration for this side-effect import.
 // @ts-expect-error -- the bundler resolves the stylesheet at build time.
 import './index.css';
@@ -17,6 +18,8 @@ type ResourceKind =
   | 'events';
 
 type StatusTone = 'healthy' | 'warning' | 'danger' | 'neutral';
+type Theme = 'light' | 'dark';
+type Density = 'normal' | 'compact';
 
 type Metadata = {
   name?: string;
@@ -100,6 +103,8 @@ type Column = {
   value: (resource: KubeResource) => string;
 };
 
+type SortDirection = 'ascending' | 'descending';
+
 const navItems: NavItem[] = [
   { kind: 'nodes', label: 'Nodes', group: 'Cluster', icon: 'server' },
   { kind: 'pods', label: 'Pods', group: 'Workloads', icon: 'box' },
@@ -159,7 +164,23 @@ const state = {
   snapshot: createDemoSnapshot(),
   loading: true,
   error: '',
+  theme: (localStorage.getItem('kube-cluster-ui-theme') === 'dark' ? 'dark' : 'light') as Theme,
+  density: (localStorage.getItem('kube-cluster-ui-density') === 'compact' ? 'compact' : 'normal') as Density,
+  sortColumn: 'Name',
+  sortDirection: 'ascending' as SortDirection,
 };
+
+function applyTheme(theme: Theme): void {
+  state.theme = theme;
+  document.documentElement.dataset.theme = theme;
+  localStorage.setItem('kube-cluster-ui-theme', theme);
+}
+
+function applyDensity(density: Density): void {
+  state.density = density;
+  document.documentElement.dataset.density = density;
+  localStorage.setItem('kube-cluster-ui-density', density);
+}
 
 function objectValue(
   value: Record<string, unknown> | undefined,
@@ -538,6 +559,43 @@ function escapeHtml(value: string): string {
   });
 }
 
+function formatManifest(resource: KubeResource): string {
+  const manifest = {
+    ...resource,
+    metadata: { ...metadata(resource) },
+  } as KubeResource & {
+    metadata: Record<string, unknown>;
+  };
+
+  delete manifest.metadata.managedFields;
+
+  return YAML.stringify(manifest);
+}
+
+function highlightYaml(yaml: string): string {
+  return yaml
+    .split('\n')
+    .map((line) => {
+      let highlighted = escapeHtml(line);
+
+      highlighted = highlighted.replace(
+        /^(\s*)([-]?\s*)([^:#]+)(:)/,
+        '$1$2<span class="yaml-key">$3</span>$4',
+      );
+      highlighted = highlighted.replace(
+        /(:\s+)(["'].*?["']|\b(?:true|false|null)\b|-?\d+(?:\.\d+)?)(?=\s*$)/,
+        '$1<span class="yaml-value">$2</span>',
+      );
+      highlighted = highlighted.replace(
+        /(#.*)$/,
+        '<span class="yaml-comment">$1</span>',
+      );
+
+      return highlighted;
+    })
+    .join('\n');
+}
+
 function getResources(kind = state.selectedKind): KubeResource[] {
   return state.snapshot.resources[kind] || [];
 }
@@ -630,10 +688,7 @@ function render() {
 
   const currentNav = navItems.find((item) => item.kind === state.selectedKind);
   const resources = getVisibleResources();
-  const selected = selectedResource() || resources[0];
-  if (selected && state.selectedResourceId !== resourceId(selected)) {
-    state.selectedResourceId = resourceId(selected);
-  }
+  const selected = selectedResource();
 
   const groupedNav = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) {
@@ -742,6 +797,14 @@ function render() {
             <button class="icon-button ${state.loading ? 'spinning' : ''}" id="refresh" title="Refresh cluster data" aria-label="Refresh cluster data">
               <i data-lucide="refresh-cw"></i>
             </button>
+
+            <button class="icon-button" id="theme-toggle" title="Switch to ${state.theme === 'dark' ? 'light' : 'dark'} mode" aria-label="Switch to ${state.theme === 'dark' ? 'light' : 'dark'} mode">
+              <i data-lucide="${state.theme === 'dark' ? 'sun' : 'moon'}"></i>
+            </button>
+
+            <button class="icon-button" id="density-toggle" title="Switch to ${state.density === 'compact' ? 'normal' : 'compact'} mode" aria-label="Switch to ${state.density === 'compact' ? 'normal' : 'compact'} mode">
+              <i data-lucide="${state.density === 'compact' ? 'maximize-2' : 'minimize-2'}"></i>
+            </button>
           </div>
         </header>
 
@@ -769,7 +832,7 @@ function render() {
             </div>
           </section>
 
-          <aside class="inspector">
+          <aside class="inspector ${selected ? 'open' : ''}">
             ${renderInspector(selected)}
           </aside>
         </section>
@@ -826,6 +889,32 @@ function summaryCard(
 
 function renderTable(resources: KubeResource[]): string {
   const columns = columnsFor(state.selectedKind);
+  const sortableColumns = [
+    { label: 'Name', value: resourceName },
+    ...columns,
+  ];
+
+  const sortedResources = [...resources].sort((left, right) => {
+    const column = sortableColumns.find((item) => item.label === state.sortColumn) || sortableColumns[0];
+    const leftValue = column.value(left);
+    const rightValue = column.value(right);
+    const leftNumber = Number(leftValue);
+    const rightNumber = Number(rightValue);
+    const comparison =
+      Number.isNaN(leftNumber) || Number.isNaN(rightNumber)
+        ? leftValue.localeCompare(rightValue, undefined, { numeric: true, sensitivity: 'base' })
+        : leftNumber - rightNumber;
+
+    return state.sortDirection === 'ascending' ? comparison : -comparison;
+  });
+
+  const sortIndicator = (label: string): string => {
+    if (label !== state.sortColumn) {
+      return '';
+    }
+
+    return state.sortDirection === 'ascending' ? ' ↑' : ' ↓';
+  };
 
   if (!resources.length) {
     return `
@@ -841,12 +930,15 @@ function renderTable(resources: KubeResource[]): string {
     <table>
       <thead>
         <tr>
-          <th>Name</th>
-          ${columns.map((column) => `<th>${escapeHtml(column.label)}</th>`).join('')}
+          ${sortableColumns
+            .map((column) => {
+              return `<th><button class="sort-button" data-sort-column="${escapeHtml(column.label)}" aria-label="Sort by ${escapeHtml(column.label)}">${escapeHtml(column.label)}${sortIndicator(column.label)}</button></th>`;
+            })
+            .join('')}
         </tr>
       </thead>
       <tbody>
-        ${resources
+        ${sortedResources
           .map((resource) => {
             const active = resourceId(resource) === state.selectedResourceId ? 'active' : '';
             const status = statusFor(resource, state.selectedKind);
@@ -883,17 +975,12 @@ function renderTable(resources: KubeResource[]): string {
 
 function renderInspector(resource: KubeResource | undefined): string {
   if (!resource) {
-    return `
-      <div class="inspector-empty">
-        <i data-lucide="panel-right"></i>
-        <p>Select a resource to inspect metadata and manifest details.</p>
-      </div>
-    `;
+    return '';
   }
 
   const kind = state.selectedKind;
   const labels = metadata(resource).labels || {};
-  const manifest = JSON.stringify(resource, null, 2);
+  const manifest = formatManifest(resource);
 
   return `
     <div class="inspector-header">
@@ -901,9 +988,14 @@ function renderInspector(resource: KubeResource | undefined): string {
         <span>${escapeHtml(kindLabel(kind))}</span>
         <h2>${escapeHtml(resourceName(resource))}</h2>
       </div>
-      <button class="icon-button small" id="copy-name" title="Copy resource name" aria-label="Copy resource name">
-        <i data-lucide="copy"></i>
-      </button>
+      <div class="inspector-actions">
+        <button class="icon-button small" id="copy-name" title="Copy resource name" aria-label="Copy resource name">
+          <i data-lucide="copy"></i>
+        </button>
+        <button class="icon-button small" id="close-inspector" title="Close inspector" aria-label="Close inspector">
+          <i data-lucide="x"></i>
+        </button>
+      </div>
     </div>
 
     <div class="facts">
@@ -935,7 +1027,7 @@ function renderInspector(resource: KubeResource | undefined): string {
           Copy
         </button>
       </div>
-      <pre id="manifest">${escapeHtml(manifest)}</pre>
+      <pre id="manifest">${highlightYaml(manifest)}</pre>
     </section>
   `;
 }
@@ -1001,6 +1093,30 @@ function bindEvents() {
     });
   });
 
+  document.querySelectorAll<HTMLButtonElement>('.sort-button').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const column = button.dataset.sortColumn;
+      if (!column) {
+        return;
+      }
+
+      if (state.sortColumn === column) {
+        state.sortDirection = state.sortDirection === 'ascending' ? 'descending' : 'ascending';
+      } else {
+        state.sortColumn = column;
+        state.sortDirection = 'ascending';
+      }
+
+      render();
+    });
+  });
+
+  document.querySelector<HTMLButtonElement>('#close-inspector')?.addEventListener('click', () => {
+    state.selectedResourceId = '';
+    render();
+  });
+
   document.querySelector<HTMLSelectElement>('#namespace')?.addEventListener('change', (event) => {
     const target = event.target as HTMLSelectElement;
     state.namespace = target.value;
@@ -1019,6 +1135,16 @@ function bindEvents() {
     void loadSnapshot();
   });
 
+  document.querySelector<HTMLButtonElement>('#theme-toggle')?.addEventListener('click', () => {
+    applyTheme(state.theme === 'dark' ? 'light' : 'dark');
+    render();
+  });
+
+  document.querySelector<HTMLButtonElement>('#density-toggle')?.addEventListener('click', () => {
+    applyDensity(state.density === 'compact' ? 'normal' : 'compact');
+    render();
+  });
+
   document.querySelector<HTMLButtonElement>('#clear-search')?.addEventListener('click', () => {
     state.query = '';
     state.selectedResourceId = '';
@@ -1035,7 +1161,7 @@ function bindEvents() {
   document.querySelector<HTMLButtonElement>('#copy-manifest')?.addEventListener('click', () => {
     const resource = selectedResource();
     if (resource) {
-      void navigator.clipboard.writeText(JSON.stringify(resource, null, 2));
+      void navigator.clipboard.writeText(formatManifest(resource));
     }
   });
 }
@@ -1434,6 +1560,8 @@ function event(
 }
 
 void (async () => {
+  applyTheme(state.theme);
+  applyDensity(state.density);
   await loadContexts();
   await loadSnapshot();
 })();

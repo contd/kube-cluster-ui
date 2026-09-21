@@ -26,3 +26,8 @@ contextBridge.exposeInMainWorld('kubeApi', {
     contextId: string,
   ) => ipcRenderer.invoke('cluster:getResource', kind, namespace, name, contextId),
 });
+
+contextBridge.exposeInMainWorld('darkMode', {
+  toggle: () => ipcRenderer.invoke('dark-mode:toggle'),
+  system: () => ipcRenderer.invoke('dark-mode:system')
+});

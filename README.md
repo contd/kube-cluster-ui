@@ -19,7 +19,7 @@ Before building, install:
 
 From the project root:
 
-```powershell
+```bash
 npm install
 ```
 
@@ -27,17 +27,28 @@ If you are using a fresh checkout and the dependency tree is not yet restored, t
 
 ### Run locally during development
 
-```powershell
+```bash
 npm start
 ```
 
 This starts the Electron app in development mode.
 
+### Run Playwright UI tests
+
+Install the Playwright browser once, then run the UI tests:
+
+```bash
+npx playwright install chromium chromium-headless-shell
+npm run test:e2e
+```
+
+The tests run against the renderer with no kubeconfig available, so they use the same built-in demo data shown by the app when it cannot connect to Kubernetes. They cover every resource view and basic inspector, sorting, theme, and compact-mode interactions.
+
 ### Create a packaged app without a Windows installer
 
 This step produces an app bundle for the current platform without creating the final installer:
 
-```powershell
+```bash
 npm run package
 ```
 
@@ -47,7 +58,7 @@ The output is typically placed in a folder under `out/`.
 
 To build the Windows distributable using the configured Forge makers:
 
-```powershell
+```bash
 npm run make
 ```
 
@@ -67,13 +78,13 @@ The generated files usually include:
 
 If you want to trigger a package build in a CI or release script, you can run:
 
-```powershell
+```bash
 npm run make
 ```
 
 or, for a non-installer package only:
 
-```powershell
+```bash
 npm run package
 ```
 
@@ -93,7 +104,7 @@ npm run package
 
 ## Useful commands summary
 
-```powershell
+```bash
 npm install
 npm start
 npm run package

@@ -4,7 +4,7 @@ import YAML from 'yaml';
 // @ts-expect-error -- the bundler resolves the stylesheet at build time.
 import './index.css';
 
-type ResourceKind =
+export type ResourceKind =
   | 'nodes'
   | 'pods'
   | 'deployments'
@@ -17,18 +17,18 @@ type ResourceKind =
   | 'pvcs'
   | 'events';
 
-type StatusTone = 'healthy' | 'warning' | 'danger' | 'neutral';
+export type StatusTone = 'healthy' | 'warning' | 'danger' | 'neutral';
 type Theme = 'light' | 'dark';
 type Density = 'normal' | 'compact';
 
-type Metadata = {
+export type Metadata = {
   name?: string;
   namespace?: string;
   creationTimestamp?: string;
   labels?: Record<string, string>;
 };
 
-type KubeResource = {
+export type KubeResource = {
   kind?: string;
   type?: string;
   metadata?: Metadata;
@@ -46,7 +46,7 @@ type KubeResource = {
   lastTimestamp?: string;
 };
 
-type Snapshot = {
+export type Snapshot = {
   context: string;
   mode: 'live' | 'demo';
   error?: string;
@@ -54,7 +54,7 @@ type Snapshot = {
   resources: Record<ResourceKind, KubeResource[]>;
 };
 
-type ClusterContext = {
+export type ClusterContext = {
   id: string;
   name: string;
   cluster: string;
@@ -182,7 +182,7 @@ function applyDensity(density: Density): void {
   localStorage.setItem('kube-cluster-ui-density', density);
 }
 
-function objectValue(
+export function objectValue(
   value: Record<string, unknown> | undefined,
   path: string[],
 ): unknown {
@@ -195,7 +195,7 @@ function objectValue(
   }, value);
 }
 
-function stringValue(value: unknown, fallback = '-'): string {
+export function stringValue(value: unknown, fallback = '-'): string {
   if (value === undefined || value === null || value === '') {
     return fallback;
   }
@@ -207,11 +207,11 @@ function stringValue(value: unknown, fallback = '-'): string {
   return String(value);
 }
 
-function metadata(resource: KubeResource): Metadata {
+export function metadata(resource: KubeResource): Metadata {
   return resource.metadata || {};
 }
 
-function resourceName(resource: KubeResource): string {
+export function resourceName(resource: KubeResource): string {
   if (resource.kind === 'Event') {
     return resource.involvedObject?.name || metadata(resource).name || '-';
   }
@@ -219,7 +219,7 @@ function resourceName(resource: KubeResource): string {
   return metadata(resource).name || '-';
 }
 
-function resourceNamespace(resource: KubeResource): string {
+export function resourceNamespace(resource: KubeResource): string {
   return (
     metadata(resource).namespace ||
     resource.involvedObject?.namespace ||
@@ -227,11 +227,11 @@ function resourceNamespace(resource: KubeResource): string {
   );
 }
 
-function resourceId(resource: KubeResource): string {
+export function resourceId(resource: KubeResource): string {
   return `${resourceNamespace(resource)}:${metadata(resource).name || resourceName(resource)}`;
 }
 
-function age(isoDate?: string): string {
+export function age(isoDate?: string): string {
   if (!isoDate) {
     return '-';
   }
@@ -252,7 +252,7 @@ function age(isoDate?: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-function podReady(resource: KubeResource): string {
+export function podReady(resource: KubeResource): string {
   const statuses = objectValue(resource.status, ['containerStatuses']);
   if (!Array.isArray(statuses)) {
     return '-';
@@ -265,7 +265,7 @@ function podReady(resource: KubeResource): string {
   return `${ready}/${statuses.length}`;
 }
 
-function workloadReady(resource: KubeResource): string {
+export function workloadReady(resource: KubeResource): string {
   const ready = stringValue(objectValue(resource.status, ['readyReplicas']), '0');
   const desired = stringValue(
     objectValue(resource.status, ['replicas']) ||
@@ -276,7 +276,7 @@ function workloadReady(resource: KubeResource): string {
   return `${ready}/${desired}`;
 }
 
-function nodePressure(resource: KubeResource): string {
+export function nodePressure(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
   if (!Array.isArray(conditions)) {
     return 'Unknown';
@@ -290,7 +290,7 @@ function nodePressure(resource: KubeResource): string {
   return ready?.status === 'True' ? 'Ready' : 'NotReady';
 }
 
-function statusFor(resource: KubeResource, kind: ResourceKind): string {
+export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   if (kind === 'pods') {
     return stringValue(objectValue(resource.status, ['phase']));
   }
@@ -318,7 +318,7 @@ function statusFor(resource: KubeResource, kind: ResourceKind): string {
   return stringValue(objectValue(resource.spec, ['type']));
 }
 
-function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
+export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
   const status = statusFor(resource, kind).toLowerCase();
 
   if (
@@ -355,7 +355,7 @@ function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
   return 'neutral';
 }
 
-function columnsFor(kind: ResourceKind): Column[] {
+export function columnsFor(kind: ResourceKind): Column[] {
   const common: Column[] = [
     { label: 'Namespace', value: resourceNamespace },
     { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
@@ -545,7 +545,7 @@ function columnsFor(kind: ResourceKind): Column[] {
   ];
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
       '&': '&amp;',
@@ -559,7 +559,7 @@ function escapeHtml(value: string): string {
   });
 }
 
-function formatManifest(resource: KubeResource): string {
+export function formatManifest(resource: KubeResource): string {
   const manifest = {
     ...resource,
     metadata: { ...metadata(resource) },
@@ -572,7 +572,7 @@ function formatManifest(resource: KubeResource): string {
   return YAML.stringify(manifest);
 }
 
-function highlightYaml(yaml: string): string {
+export function highlightYaml(yaml: string): string {
   return yaml
     .split('\n')
     .map((line) => {
@@ -648,7 +648,7 @@ function namespaceOptions(): string[] {
   return ['all', ...Array.from(new Set(namespaces)).sort()];
 }
 
-function contextLabel(context: ClusterContext): string {
+export function contextLabel(context: ClusterContext): string {
   return context.name || context.fileName || 'Unknown context';
 }
 
@@ -1050,7 +1050,7 @@ function fact(label: string, value: string): string {
   `;
 }
 
-function kindLabel(kind: ResourceKind): string {
+export function kindLabel(kind: ResourceKind): string {
   return navItems.find((item) => item.kind === kind)?.label || kind;
 }
 
@@ -1214,7 +1214,7 @@ async function loadSnapshot() {
   }
 }
 
-function createDemoSnapshot(): Snapshot {
+export function createDemoSnapshot(): Snapshot {
   return {
     context: 'kind-prod-east',
     mode: 'demo',
@@ -1287,11 +1287,11 @@ function createDemoSnapshot(): Snapshot {
   };
 }
 
-function timestamp(hoursOffset: number): string {
+export function timestamp(hoursOffset: number): string {
   return new Date(Date.now() + hoursOffset * 60 * 60 * 1000).toISOString();
 }
 
-function namespace(name: string, hoursOffset: number): KubeResource {
+export function namespace(name: string, hoursOffset: number): KubeResource {
   return {
     kind: 'Namespace',
     metadata: {
@@ -1303,7 +1303,7 @@ function namespace(name: string, hoursOffset: number): KubeResource {
   };
 }
 
-function node(
+export function node(
   name: string,
   role: string,
   version: string,
@@ -1329,7 +1329,7 @@ function node(
   };
 }
 
-function pod(
+export function pod(
   namespaceName: string,
   name: string,
   phase: string,
@@ -1364,7 +1364,7 @@ function pod(
   };
 }
 
-function workload(
+export function workload(
   kind: 'Deployment' | 'StatefulSet',
   namespaceName: string,
   name: string,
@@ -1390,7 +1390,7 @@ function workload(
   };
 }
 
-function daemonset(
+export function daemonset(
   namespaceName: string,
   name: string,
   desired: number,
@@ -1415,7 +1415,7 @@ function daemonset(
   };
 }
 
-function service(
+export function service(
   namespaceName: string,
   name: string,
   type: string,
@@ -1442,7 +1442,7 @@ function service(
   };
 }
 
-function ingress(
+export function ingress(
   namespaceName: string,
   name: string,
   ingressClassName: string,
@@ -1464,7 +1464,7 @@ function ingress(
   };
 }
 
-function configMap(
+export function configMap(
   namespaceName: string,
   name: string,
   keys: string[],
@@ -1485,7 +1485,7 @@ function configMap(
   };
 }
 
-function secret(
+export function secret(
   namespaceName: string,
   name: string,
   type: string,
@@ -1508,7 +1508,7 @@ function secret(
   };
 }
 
-function pvc(
+export function pvc(
   namespaceName: string,
   name: string,
   phase: string,
@@ -1529,7 +1529,7 @@ function pvc(
   };
 }
 
-function event(
+export function event(
   namespaceName: string,
   objectName: string,
   type: string,

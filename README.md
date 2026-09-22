@@ -53,6 +53,14 @@ npm run test:e2e
 
 The tests run against the renderer with no kubeconfig available, so they use the same built-in demo data shown by the app when it cannot connect to Kubernetes. They cover every resource view and basic inspector, sorting, theme, and compact-mode interactions.
 
+### Run unit tests
+
+```bash
+npm run test:unit
+```
+
+The unit tests cover the renderer's pure formatting, status, identity, and demo-data helper functions with multiple inputs.
+
 ### Create a packaged app without a Windows installer
 
 This step produces an app bundle for the current platform without creating the final installer:

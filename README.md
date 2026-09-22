@@ -6,7 +6,12 @@
 [![Linux build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?branch=main&job=build-linux&label=Linux)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
 
 
-![Kube Cluster UI main interface](docs/main-interface.png)
+<table>
+	<tr>
+		<td><img src="docs/main-interface.png" alt="Kube Cluster UI main interface" /></td>
+		<td><img src="docs/main-interface-dark.png" alt="Kube Cluster UI dark mode interface" /></td>
+	</tr>
+</table>
 
 ---
 ## Build and Package for Windows

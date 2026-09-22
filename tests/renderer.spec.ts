@@ -30,14 +30,23 @@ test.describe('Kube Cluster UI demo data', () => {
     });
   }
 
-    test('captures the main interface screenshot', async ({ page }) => {
-      await expect(page.locator('.workspace')).toBeVisible();
-      await expect(page.locator('h1')).toHaveText('Pods');
-      await page.screenshot({
-        path: 'docs/main-interface.png',
-        fullPage: true,
-      });
+  test('captures the default interface screenshot', async ({ page }) => {
+    await expect(page.locator('.workspace')).toBeVisible();
+    await expect(page.locator('h1')).toHaveText('Pods');
+    await page.screenshot({
+      path: 'docs/main-interface.png',
+      fullPage: true,
     });
+  });
+
+  test('captures the dark mode interface screenshot', async ({ page }) => {
+    await page.locator('#theme-toggle').click();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await page.screenshot({
+      path: 'docs/main-interface-dark.png',
+      fullPage: true,
+    });
+  });
 
   test('opens and closes the resource inspector', async ({ page }) => {
     await page.locator('tbody tr').first().click();

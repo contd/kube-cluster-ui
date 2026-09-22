@@ -1,5 +1,10 @@
 # Kube Cluster UI
 
+![Kube Cluster UI main interface](docs/main-interface.png)
+
+
+
+---
 ## Build and Package for Windows
 
 This project is configured with Electron Forge and includes the Squirrel Windows maker in [forge.config.ts](forge.config.ts). On a Windows machine, you can build and package the app into a Windows installer or distributable zip.

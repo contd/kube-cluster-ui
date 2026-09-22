@@ -1,8 +1,11 @@
 # Kube Cluster UI
 
+[![Build and publish desktop binaries](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml/badge.svg)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+[![Windows build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?branch=main&job=Build%20windows&label=Windows)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+[![macOS build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?branch=main&job=Build%20macos&label=macOS)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+[![Linux build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?branch=main&job=Build%20linux&label=Linux)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+
 ![Kube Cluster UI main interface](docs/main-interface.png)
-
-
 
 ---
 ## Build and Package for Windows

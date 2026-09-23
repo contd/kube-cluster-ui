@@ -671,8 +671,8 @@ const createApplicationMenu = (mainWindow: BrowserWindow) => {
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    minWidth: 1160,
-    minHeight: 760,
+    minWidth: 1440,
+    minHeight: 920,
     width: 1440,
     height: 920,
     title: 'Kube Cluster UI',
@@ -682,6 +682,8 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
     },
   });
+
+  mainWindow.maximize();
 
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {

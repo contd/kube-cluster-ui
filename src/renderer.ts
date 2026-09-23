@@ -76,6 +76,11 @@ type KubeApi = {
     contexts: ClusterContext[];
     selectedContextId: string;
   }>;
+  addKubeconfig: (kubeconfig: string) => Promise<{
+    defaultPath: string;
+    contexts: ClusterContext[];
+    selectedContextId: string;
+  }>;
   getSnapshot: (namespace: string, contextId?: string) => Promise<Snapshot>;
   getResource: (
     kind: ResourceKind,
@@ -166,6 +171,8 @@ const state = {
   error: '',
   theme: (localStorage.getItem('kube-cluster-ui-theme') === 'dark' ? 'dark' : 'light') as Theme,
   density: (localStorage.getItem('kube-cluster-ui-density') === 'compact' ? 'compact' : 'normal') as Density,
+  kubeconfigDialog: false,
+  kubeconfigError: '',
   sortColumn: 'Name',
   sortDirection: 'ascending' as SortDirection,
 };
@@ -724,8 +731,13 @@ function render() {
         </div>
 
         <div class="context-picker">
-          <label class="context-control">
+          <div class="context-heading">
             <span>Server</span>
+            <button class="context-add" id="add-context" title="Add kubeconfig" aria-label="Add kubeconfig">
+              <i data-lucide="plus"></i>
+            </button>
+          </div>
+          <label class="context-control">
             <select id="context-select">
               ${state.contexts.length
                 ? state.contexts
@@ -738,6 +750,27 @@ function render() {
             </select>
           </label>
         </div>
+
+        ${state.kubeconfigDialog ? `
+          <div class="dialog-backdrop" id="kubeconfig-dialog-backdrop">
+            <section class="dialog" role="dialog" aria-modal="true" aria-labelledby="kubeconfig-dialog-title">
+              <div class="dialog-header">
+                <div>
+                  <div class="eyebrow">Server</div>
+                  <h2 id="kubeconfig-dialog-title">Add kubeconfig</h2>
+                </div>
+                <button class="icon-button" id="close-kubeconfig" title="Close" aria-label="Close"><i data-lucide="x"></i></button>
+              </div>
+              <p class="dialog-copy">Paste a kubeconfig to save it as a server.</p>
+              <textarea id="kubeconfig-input" placeholder="apiVersion: v1\nkind: Config\n..."></textarea>
+              ${state.kubeconfigError ? `<div class="dialog-error">${escapeHtml(state.kubeconfigError)}</div>` : ''}
+              <div class="dialog-actions">
+                <button class="tool-button" id="cancel-kubeconfig">Cancel</button>
+                <button class="primary-button" id="save-kubeconfig">Save server</button>
+              </div>
+            </section>
+          </div>
+        ` : ''}
 
         <nav class="navigation">
           ${Object.entries(groupedNav)
@@ -1055,6 +1088,43 @@ export function kindLabel(kind: ResourceKind): string {
 }
 
 function bindEvents() {
+  document.querySelector<HTMLButtonElement>('#add-context')?.addEventListener('click', () => {
+    state.kubeconfigDialog = true;
+    state.kubeconfigError = '';
+    render();
+    document.querySelector<HTMLTextAreaElement>('#kubeconfig-input')?.focus();
+  });
+
+  const closeKubeconfigDialog = () => {
+    state.kubeconfigDialog = false;
+    state.kubeconfigError = '';
+    render();
+  };
+
+  document.querySelector<HTMLButtonElement>('#close-kubeconfig')?.addEventListener('click', closeKubeconfigDialog);
+  document.querySelector<HTMLButtonElement>('#cancel-kubeconfig')?.addEventListener('click', closeKubeconfigDialog);
+  document.querySelector<HTMLButtonElement>('#save-kubeconfig')?.addEventListener('click', async () => {
+    const input = document.querySelector<HTMLTextAreaElement>('#kubeconfig-input');
+    const kubeconfig = input?.value.trim() || '';
+    if (!kubeconfig || !window.kubeApi) {
+      state.kubeconfigError = kubeconfig ? 'Preload API is unavailable.' : 'Paste a kubeconfig before saving.';
+      render();
+      return;
+    }
+
+    try {
+      const result = await window.kubeApi.addKubeconfig(kubeconfig);
+      state.contexts = result.contexts;
+      state.selectedContextId = result.selectedContextId;
+      state.kubeconfigDialog = false;
+      state.kubeconfigError = '';
+      await loadSnapshot();
+    } catch (error) {
+      state.kubeconfigError = error instanceof Error ? error.message : 'Unable to save kubeconfig.';
+      render();
+    }
+  });
+
   document.querySelectorAll<HTMLButtonElement>('.nav-item').forEach((button) => {
     button.addEventListener('click', () => {
       state.selectedKind = button.dataset.kind as ResourceKind;

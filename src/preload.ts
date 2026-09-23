@@ -15,6 +15,8 @@ type ResourceKind =
 
 contextBridge.exposeInMainWorld('kubeApi', {
   getContexts: () => ipcRenderer.invoke('cluster:getContexts'),
+  addKubeconfig: (kubeconfig: string) =>
+    ipcRenderer.invoke('cluster:addKubeconfig', kubeconfig),
   setContext: (contextId: string) =>
     ipcRenderer.invoke('cluster:setContext', contextId),
   getSnapshot: (namespace: string, contextId: string) =>

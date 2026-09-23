@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { nativeImage } from "electron";
@@ -86,10 +87,17 @@ type KubeContext = {
   filePath: string;
   fileName: string;
   isCurrent: boolean;
+  kubeconfig?: string;
+};
+
+type SavedCluster = {
+  id: string;
+  kubeconfig: string;
 };
 
 type AppSettings = {
   selectedContextId?: string;
+  clusters?: SavedCluster[];
 };
 
 const namespacedResources = new Set<ResourceKind>([
@@ -175,14 +183,39 @@ const readContextsFromFile = async (filePath: string): Promise<KubeContext[]> =>
   }
 };
 
+const readContextsFromString = (id: string, kubeconfig: string): KubeContext[] => {
+  try {
+    const config = new k8s.KubeConfig();
+    config.loadFromString(kubeconfig);
+    const currentContext = config.getCurrentContext();
+
+    return config.getContexts().map((context) => ({
+      id: `${id}::${context.name}`,
+      name: context.name,
+      cluster: context.cluster,
+      user: context.user,
+      namespace: context.namespace || 'default',
+      filePath: id,
+      fileName: 'Saved kubeconfig',
+      isCurrent: context.name === currentContext,
+      kubeconfig,
+    }));
+  } catch {
+    return [];
+  }
+};
+
 const scanKubeContexts = async (): Promise<KubeContext[]> => {
   try {
+    const settings = await readSettings();
     const filePaths = await resolveKubeconfigCandidates();
     const contexts = (
       await Promise.all(filePaths.map(readContextsFromFile))
     ).flat();
+    const savedContexts = (settings.clusters || [])
+      .flatMap((cluster) => readContextsFromString(`saved:${cluster.id}`, cluster.kubeconfig));
 
-    return contexts.sort((left, right) => {
+    return [...contexts, ...savedContexts].sort((left, right) => {
       return (
         left.name.localeCompare(right.name) ||
         left.fileName.localeCompare(right.fileName) ||
@@ -221,7 +254,11 @@ const resolveSelectedContext = async (
  */
 const createKubeConfig = (context: KubeContext): k8s.KubeConfig => {
   const kubeConfig = new k8s.KubeConfig();
-  kubeConfig.loadFromFile(context.filePath);
+  if (context.kubeconfig) {
+    kubeConfig.loadFromString(context.kubeconfig);
+  } else {
+    kubeConfig.loadFromFile(context.filePath);
+  }
   kubeConfig.setCurrentContext(context.name);
   return kubeConfig;
 };
@@ -401,6 +438,27 @@ const registerKubernetesHandlers = () => {
     };
   });
 
+  ipcMain.handle('cluster:addKubeconfig', async (_event, kubeconfig: string) => {
+    const contexts = readContextsFromString('validation', kubeconfig);
+    if (!contexts.length) {
+      throw new Error('The pasted kubeconfig contains no valid contexts.');
+    }
+
+    const id = crypto.createHash('sha256').update(kubeconfig).digest('hex').slice(0, 16);
+    const settings = await readSettings();
+    const clusters = (settings.clusters || []).filter((cluster) => cluster.id !== id);
+    clusters.push({ id, kubeconfig });
+    await writeSettings({ ...settings, clusters });
+
+    const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
+    const resolved = await resolveSelectedContext(`saved:${id}::${contexts[0].name}`);
+    return {
+      defaultPath: resolvedKubeconfigPath,
+      contexts: resolved.contexts,
+      selectedContextId: resolved.selectedContext?.id || '',
+    };
+  });
+
   ipcMain.handle(
     'cluster:setContext',
     async (_event, contextId: string) => {
@@ -409,9 +467,8 @@ const registerKubernetesHandlers = () => {
         await resolveSelectedContext(contextId);
 
       if (selectedContext) {
-        await writeSettings({
-          selectedContextId: selectedContext.id,
-        });
+        const settings = await readSettings();
+        await writeSettings({ ...settings, selectedContextId: selectedContext.id });
       }
 
       return {

@@ -13,6 +13,8 @@
 	</tr>
 </table>
 
+<video src="docs/video.webm" controls muted playsinline></video>
+
 ## Features
 
 Kube Cluster UI is a desktop Kubernetes dashboard designed to make cluster inspection fast and approachable without a full Lens-style desktop experience.

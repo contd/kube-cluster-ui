@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from 'electron';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -6,6 +6,7 @@ import { nativeImage } from "electron";
 import started from 'electron-squirrel-startup';
 import * as k8s from '@kubernetes/client-node';
 import { updateElectronApp } from 'update-electron-app';
+import packageMetadata from '../package.json';
 
 // Handle updates and auto-restart the app when a new version is available.
 updateElectronApp();
@@ -587,6 +588,86 @@ const icon = nativeImage.createFromPath(
   appIconPath(process.platform)
 );
 
+const createApplicationMenu = (mainWindow: BrowserWindow) => {
+  const aboutMenuItem = () => ({
+    label: `About ${packageMetadata.productName}`,
+    click: () => mainWindow.webContents.send('app:show-about'),
+  });
+  const editMenu = {
+    label: 'Edit',
+    submenu: [
+      { role: 'undo' as const },
+      { role: 'redo' as const },
+      { type: 'separator' as const },
+      { role: 'cut' as const },
+      { role: 'copy' as const },
+      { role: 'paste' as const },
+      { role: 'pasteAndMatchStyle' as const },
+      { role: 'delete' as const },
+      { type: 'separator' as const },
+      { role: 'selectAll' as const },
+    ],
+  };
+  const fileMenu = {
+    label: 'File',
+    submenu: [
+      { role: 'close' as const },
+      { type: 'separator' as const },
+      { role: 'quit' as const },
+    ],
+  };
+  const viewMenu = {
+    label: 'View',
+    submenu: [
+      { role: 'reload' as const },
+      { role: 'forceReload' as const },
+      { type: 'separator' as const },
+      { role: 'toggleDevTools' as const },
+      { type: 'separator' as const },
+      { role: 'resetZoom' as const },
+      { role: 'zoomIn' as const },
+      { role: 'zoomOut' as const },
+      { type: 'separator' as const },
+      { role: 'togglefullscreen' as const },
+    ],
+  };
+  const template = process.platform === 'darwin'
+    ? [
+        {
+          label: packageMetadata.productName,
+          submenu: [
+            aboutMenuItem(),
+            { type: 'separator' as const },
+            { role: 'services' as const },
+            { type: 'separator' as const },
+            { role: 'hide' as const },
+            { role: 'hideOthers' as const },
+            { role: 'unhide' as const },
+            { type: 'separator' as const },
+            { role: 'quit' as const },
+          ],
+        },
+        editMenu,
+        viewMenu,
+        {
+          label: 'Help',
+          submenu: [aboutMenuItem()],
+        },
+      ]
+    : [
+        fileMenu,
+        editMenu,
+        viewMenu,
+        {
+          label: 'Help',
+          submenu: [aboutMenuItem()],
+        },
+      ];
+  const menu = Menu.buildFromTemplate(template);
+
+  Menu.setApplicationMenu(menu);
+};
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -611,8 +692,18 @@ const createWindow = () => {
     );
   }
 
-  mainWindow.setMenuBarVisibility(false);
+  createApplicationMenu(mainWindow);
 };
+
+app.setName(packageMetadata.productName);
+
+ipcMain.handle('app:getAbout', () => ({
+  productName: packageMetadata.productName,
+  version: packageMetadata.version,
+  repository: packageMetadata.repository,
+  description: packageMetadata.description,
+  author: packageMetadata.author,
+}));
 
 ipcMain.handle('dark-mode:toggle', () => {
   if (nativeTheme.shouldUseDarkColors) {

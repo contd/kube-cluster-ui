@@ -33,3 +33,10 @@ contextBridge.exposeInMainWorld('darkMode', {
   toggle: () => ipcRenderer.invoke('dark-mode:toggle'),
   system: () => ipcRenderer.invoke('dark-mode:system')
 });
+
+contextBridge.exposeInMainWorld('appInfo', {
+  getAbout: () => ipcRenderer.invoke('app:getAbout'),
+  onShowAbout: (listener: () => void) => {
+    ipcRenderer.on('app:show-about', listener);
+  },
+});

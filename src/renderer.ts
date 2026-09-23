@@ -21,6 +21,14 @@ export type StatusTone = 'healthy' | 'warning' | 'danger' | 'neutral';
 type Theme = 'light' | 'dark';
 type Density = 'normal' | 'compact';
 
+type AboutInfo = {
+  productName: string;
+  version: string;
+  repository: { type: string; url: string };
+  description: string;
+  author: { name: string; email: string };
+};
+
 export type Metadata = {
   name?: string;
   namespace?: string;
@@ -93,6 +101,10 @@ type KubeApi = {
 declare global {
   interface Window {
     kubeApi?: KubeApi;
+    appInfo?: {
+      getAbout: () => Promise<AboutInfo>;
+      onShowAbout: (listener: () => void) => void;
+    };
   }
 }
 
@@ -175,6 +187,8 @@ const state = {
   kubeconfigError: '',
   sortColumn: 'Name',
   sortDirection: 'ascending' as SortDirection,
+  view: 'dashboard' as 'dashboard' | 'about',
+  about: null as AboutInfo | null,
 };
 
 function applyTheme(theme: Theme): void {
@@ -693,6 +707,13 @@ function render() {
     return;
   }
 
+  if (state.view === 'about') {
+    app.innerHTML = renderAbout();
+    createIcons({ icons });
+    bindAboutEvents();
+    return;
+  }
+
   const currentNav = navItems.find((item) => item.kind === state.selectedKind);
   const resources = getVisibleResources();
   const selected = selectedResource();
@@ -875,6 +896,66 @@ function render() {
 
   createIcons({ icons });
   bindEvents();
+}
+
+function renderAbout(): string {
+  const about = state.about;
+  if (!about) {
+    return '<main class="about-page"><div class="about-card">Loading application information...</div></main>';
+  }
+
+  return `
+    <main class="about-page">
+      <section class="about-card">
+        <button class="tool-button about-back" id="about-back">
+          <i data-lucide="arrow-left"></i>
+          Back to cluster
+        </button>
+        <div class="about-mark"><i data-lucide="network"></i></div>
+        <div class="eyebrow">About</div>
+        <h1>${escapeHtml(about.productName)}</h1>
+        <p class="about-version">Version ${escapeHtml(about.version)}</p>
+        <p class="about-description">${escapeHtml(about.description)}</p>
+        <dl class="about-details">
+          <div><dt>Author</dt><dd>${escapeHtml(about.author.name)}${about.author.email ? ` <span class="about-author-email">(${escapeHtml(about.author.email)})</span>` : ''}</dd></div>
+          <div><dt>Repository</dt><dd><a href="${escapeHtml(about.repository.url)}" target="_blank" rel="noreferrer">${escapeHtml(about.repository.url)}</a></dd></div>
+        </dl>
+      </section>
+    </main>
+  `;
+}
+
+function bindAboutEvents(): void {
+  document.querySelector<HTMLButtonElement>('#about-back')?.addEventListener('click', () => {
+    state.view = 'dashboard';
+    render();
+  });
+}
+
+async function openAbout(): Promise<void> {
+  state.view = 'about';
+  state.about = null;
+  render();
+
+  try {
+    if (!window.appInfo) {
+      throw new Error('Application information is unavailable.');
+    }
+
+    state.about = await window.appInfo.getAbout();
+  } catch {
+    state.about = {
+      productName: 'Kube Cluster UI',
+      version: 'Unknown',
+      repository: { type: 'git', url: '' },
+      description: 'A Kubernetes cluster browser.',
+      author: { name: 'Unknown', email: '' },
+    };
+  }
+
+  if (state.view === 'about') {
+    render();
+  }
 }
 
 function renderSummary(): string {
@@ -1632,6 +1713,9 @@ export function event(
 void (async () => {
   applyTheme(state.theme);
   applyDensity(state.density);
+  window.appInfo?.onShowAbout(() => {
+    void openAbout();
+  });
   await loadContexts();
   await loadSnapshot();
 })();

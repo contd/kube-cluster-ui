@@ -359,12 +359,134 @@ button {
   padding: 22px 24px 24px;
 }
 
+.about-page {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+  box-sizing: border-box;
+  background: radial-gradient(circle at 50% 0%, #e3f2f0 0, #f6f7f9 46%, #edf1f3 100%);
+}
+
+.about-card {
+  width: min(620px, 100%);
+  padding: 36px;
+  border: 1px solid #d4dfe3;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 20px 60px rgba(40, 67, 76, 0.12);
+}
+
+.about-back {
+  height: 36px;
+  margin-bottom: 52px;
+}
+
+.about-mark {
+  display: grid;
+  width: 64px;
+  height: 64px;
+  margin-bottom: 24px;
+  place-items: center;
+  border-radius: 14px;
+  background: #1c6470;
+  color: #d8f5ee;
+}
+
+.about-mark svg {
+  width: 32px;
+  height: 32px;
+}
+
+.about-card h1 {
+  margin-top: 5px;
+  font-size: 34px;
+}
+
+.about-version {
+  margin-top: 7px;
+  color: #62757d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.about-description {
+  max-width: 48ch;
+  margin-top: 28px;
+  color: #405761;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.about-details {
+  display: grid;
+  gap: 14px;
+  margin: 34px 0 0;
+  padding-top: 22px;
+  border-top: 1px solid #dbe4e7;
+}
+
+.about-details div {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.about-details dt {
+  color: #73848b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.about-details dd {
+  margin: 0;
+  color: #253f48;
+  overflow-wrap: anywhere;
+}
+
+.about-details a {
+  color: #1c6470;
+}
+
+.about-author-email {
+  color: #73848b;
+  font-size: 12px;
+}
+
 .topbar {
   display: flex;
   justify-content: space-between;
   gap: 22px;
   align-items: center;
   min-height: 70px;
+}
+
+[data-theme="dark"] .about-page {
+  background: radial-gradient(circle at 50% 0%, #203e43 0, #101b21 58%, #0d1519 100%);
+}
+
+[data-theme="dark"] .about-card {
+  border-color: #38525d;
+  background: rgba(23, 38, 45, 0.94);
+}
+
+[data-theme="dark"] .about-version,
+[data-theme="dark"] .about-description,
+[data-theme="dark"] .about-details dt {
+  color: #a9bdc5;
+}
+
+[data-theme="dark"] .about-details {
+  border-color: #38525d;
+}
+
+[data-theme="dark"] .about-details dd {
+  color: #e5f0f3;
+}
+
+[data-theme="dark"] .about-author-email {
+  color: #a9bdc5;
 }
 
 .eyebrow {

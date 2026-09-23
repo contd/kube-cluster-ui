@@ -6,20 +6,9 @@
     "type": "git",
     "url": "https://github.com/contd/kube-cluster-ui.git"
   },
-  "description": "An Electron Forge Kubernetes cluster browser inspired by Lens.",
+  "description": "A Kubernetes cluster browser inspired by LENS.",
   "main": ".vite/build/main.js",
   "private": true,
-  "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "package:builder": "electron-forge package && electron-builder --config electron-builder.yml --publish never",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "lint": "eslint --ext .ts,.tsx .",
-    "test:e2e": "playwright test",
-    "test:unit": "vitest run",
-    "test": "vitest run && playwright test"
-  },
   "keywords": [
     "electron",
     "kubernetes",
@@ -30,6 +19,17 @@
   "author": {
     "name": "Jason Kumpf",
     "email": "jason.kumpf@apexsupplychain.com"
+  },
+  "scripts": {
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "package:builder": "electron-forge package && electron-builder --config electron-builder.yml --publish never",
+    "make": "electron-forge make",
+    "publish": "electron-forge publish",
+    "lint": "eslint --ext .ts,.tsx .",
+    "test:e2e": "playwright test",
+    "test:unit": "vitest run",
+    "test": "vitest run && playwright test"
   },
   "license": "MIT",
   "devDependencies": {

@@ -1,0 +1,53 @@
+appId: com.contd.kube-cluster-ui
+productName: Kube Cluster UI
+executableName: kube-cluster-ui
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
+asar: true
+
+# Electron Forge's Vite plugin creates these bundles before electron-builder runs.
+files:
+  - .vite/build/**/*
+  - .vite/renderer/**/*
+  - package.json
+  - src/icon.png
+  - src/icon.ico
+  - src/icon.icns
+
+extraMetadata:
+  main: .vite/build/main.js
+
+publish:
+  provider: github
+  owner: contd
+  repo: kube-cluster-ui
+  releaseType: draft
+
+win:
+  icon: src/icon.ico
+  target:
+    - nsis
+    - portable
+    - zip
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+
+mac:
+  icon: src/icon.icns
+  category: public.app-category.developer-tools
+  target:
+    - dmg
+    - zip
+
+linux:
+  icon: src/icon.png
+  category: Development
+  target:
+    - AppImage
+    - deb
+    - rpm
+    - tar.gz

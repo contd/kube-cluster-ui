@@ -78,6 +78,20 @@ npm run package
 
 The output is typically placed in a folder under `out/`.
 
+### Build with Electron Builder
+
+Electron Builder is configured in [electron-builder.yml](electron-builder.yml) for all desktop platforms. It uses the Forge Vite plugin to compile the application bundles, then creates native distributables in `dist/`:
+
+```bash
+npm run package:builder
+```
+
+The configured targets are:
+
+- Windows: NSIS installer, portable executable, and zip
+- macOS: DMG and zip
+- Linux: AppImage, deb, rpm, and tar.gz
+
 ### Create a Windows installer
 
 To build the Windows distributable using the configured Forge makers:

@@ -13,7 +13,7 @@
 	</tr>
 </table>
 
-<video src="docs/video.webm" controls muted playsinline></video>
+[![Kube Cluster UI demo video](docs/video-preview.gif)](docs/video.webm)
 
 ## Features
 

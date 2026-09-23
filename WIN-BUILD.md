@@ -1,8 +1,17 @@
 ## Build and Package for Windows
 
-This project is configured with Electron Forge and includes the Squirrel Windows maker in [forge.config.ts](forge.config.ts). On a Windows machine, you can build and package the app into a Windows installer or distributable zip.
+On a Windows machine, you can build and package the app into a Windows installer or distributable zip.
 
 > Important: the Windows installer is produced on a Windows machine. The `MakerSquirrel` configuration is Windows-specific and is not meant to be run from a non-Windows host for native Windows packaging.
+
+### Prerequisites
+
+Before building, install:
+
+- `Node.js` LTS (18+ recommended; current project targets `Electron` 44)
+- `Git` for `Windows`
+- A `Windows` environment such as `Windows` 10/11, or a `Windows` build VM/container
+- Administrator access if you need to install dependencies or sign the installer
 
 ### Create a Windows installer
 

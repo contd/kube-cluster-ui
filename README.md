@@ -13,7 +13,19 @@
 	</tr>
 </table>
 
-[![Kube Cluster UI demo video](docs/video-preview.gif)](docs/video.webm)
+## Latest builds
+
+Download the newest packaged releases from GitHub:
+
+- [`Windows` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [`macOS` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [`Linux` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [Latest release](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [Latest `GitHub` Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+
+---
+
+[![Kube Cluster UI demo video](docs/video-preview.gif)](docs/video-preview.gif)
 
 ## Features
 
@@ -25,28 +37,11 @@ Kube Cluster UI is a desktop Kubernetes dashboard designed to make cluster inspe
 - Connect to a real kubeconfig or fall back to bundled demo data when a cluster is unavailable
 - Package and ship the app natively for Windows, macOS, and Linux
 
-## Latest builds
-
-Download the newest packaged releases from GitHub:
-
-- [Latest release](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [Latest `GitHub` Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-- [`Windows` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [`macOS` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [`Linux` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
-
 ---
 
 ## Development
 
-### Prerequisites
-
-Before building, install:
-
-- `Node.js` LTS (18+ recommended; current project targets `Electron` 44)
-- `Git` for `Windows`
-- A `Windows` environment such as `Windows` 10/11, or a `Windows` build VM/container
-- Administrator access if you need to install dependencies or sign the installer
+> For windows users see [WIN-BUILD.md](WIN-BUILD.md).
 
 ### Install dependencies
 

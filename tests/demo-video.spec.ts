@@ -1,15 +1,28 @@
 import { test, expect } from '@playwright/test';
 
+// Record the complete browser interaction so the resulting artifact can be
+// reviewed as a demonstration of the main dashboard workflow.
 test.use({ video: 'on' });
 
+// This suite intentionally uses the renderer's demo fallback. That keeps the
+// recorded flow deterministic and makes it independent of kubectl or a live
+// Kubernetes cluster.
 test.describe('demo video flow', () => {
+  // Start from the dashboard and wait for the data source indicator before any
+  // navigation. This prevents the recording from capturing an intermediate
+  // loading state as if it were part of the intended workflow.
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.connection')).toHaveText('Demo data');
   });
 
+  // Demonstrates the primary browsing path: verify the default Pods view,
+  // switch to Nodes, return to Pods, and open the first pod's inspector. The
+  // manifest assertions confirm that the detail panel is populated and that
+  // server-managed metadata is removed from the user-facing YAML.
   test('switches between Pods and Nodes and opens a Pod detail panel', async ({ page }) => {
-    await expect(page.locator('h1')).toHaveText('Pods');
+    await expect(page.locator('h1')).toHaveText('Dashboard');
+    await expect(page.locator('.summary-grid')).toBeVisible();
     await page.waitForTimeout(1500);
 
     await page.locator('.nav-item[data-kind="nodes"]').click();

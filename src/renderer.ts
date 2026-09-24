@@ -1,173 +1,40 @@
 import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
+import * as dataplane from './dataplane';
+import type {
+  AboutInfo,
+  ClusterContext,
+  Column,
+  Density,
+  KubeResource,
+  Metadata,
+  NavItem,
+  ResourceKind,
+  Snapshot,
+  SortDirection,
+  StatusTone,
+  Theme,
+} from './app.types';
+export type {
+  AboutInfo,
+  ClusterContext,
+  Column,
+  Density,
+  KubeApi,
+  KubeResource,
+  Metadata,
+  NavItem,
+  ResourceKind,
+  Snapshot,
+  SortDirection,
+  StatusTone,
+  Theme,
+} from './app.types';
 // CSS is bundled by the build tool; TypeScript has no declaration for this side-effect import.
 // @ts-expect-error -- the bundler resolves the stylesheet at build time.
 import './index.css';
 
-export type ResourceKind =
-  | 'nodes'
-  | 'pods'
-  | 'deployments'
-  | 'daemonsets'
-  | 'statefulsets'
-  | 'services'
-  | 'ingresses'
-  | 'configmaps'
-  | 'secrets'
-  | 'pvcs'
-  | 'events';
-
-export type StatusTone = 'healthy' | 'warning' | 'danger' | 'neutral';
-type Theme = 'light' | 'dark';
-type Density = 'normal' | 'compact';
-
-type AboutInfo = {
-  productName: string;
-  version: string;
-  repository: { type: string; url: string };
-  description: string;
-  author: { name: string; email: string };
-};
-
-export type Metadata = {
-  name?: string;
-  namespace?: string;
-  creationTimestamp?: string;
-  labels?: Record<string, string>;
-};
-
-export type KubeResource = {
-  kind?: string;
-  type?: string;
-  metadata?: Metadata;
-  status?: Record<string, unknown>;
-  spec?: Record<string, unknown>;
-  data?: Record<string, string>;
-  involvedObject?: {
-    kind?: string;
-    name?: string;
-    namespace?: string;
-  };
-  reason?: string;
-  message?: string;
-  count?: number;
-  lastTimestamp?: string;
-};
-
-export type Snapshot = {
-  context: string;
-  mode: 'live' | 'demo';
-  error?: string;
-  namespaces: KubeResource[];
-  resources: Record<ResourceKind, KubeResource[]>;
-};
-
-export type ClusterContext = {
-  id: string;
-  name: string;
-  cluster: string;
-  user: string;
-  namespace: string;
-  filePath: string;
-  fileName: string;
-  isCurrent: boolean;
-};
-
-type KubeApi = {
-  getContexts: () => Promise<{
-    defaultPath: string;
-    contexts: ClusterContext[];
-    selectedContextId: string;
-  }>;
-  setContext: (contextId: string) => Promise<{
-    defaultPath: string;
-    contexts: ClusterContext[];
-    selectedContextId: string;
-  }>;
-  addKubeconfig: (kubeconfig: string) => Promise<{
-    defaultPath: string;
-    contexts: ClusterContext[];
-    selectedContextId: string;
-  }>;
-  getSnapshot: (namespace: string, contextId?: string) => Promise<Snapshot>;
-  getResource: (
-    kind: ResourceKind,
-    namespace: string,
-    name: string,
-    contextId?: string,
-  ) => Promise<KubeResource>;
-};
-
-declare global {
-  interface Window {
-    kubeApi?: KubeApi;
-    appInfo?: {
-      getAbout: () => Promise<AboutInfo>;
-      onShowAbout: (listener: () => void) => void;
-    };
-  }
-}
-
-type NavItem = {
-  kind: ResourceKind;
-  label: string;
-  group: string;
-  icon: string;
-};
-
-type Column = {
-  label: string;
-  value: (resource: KubeResource) => string;
-};
-
-type SortDirection = 'ascending' | 'descending';
-
-const navItems: NavItem[] = [
-  { kind: 'nodes', label: 'Nodes', group: 'Cluster', icon: 'server' },
-  { kind: 'pods', label: 'Pods', group: 'Workloads', icon: 'box' },
-  {
-    kind: 'deployments',
-    label: 'Deployments',
-    group: 'Workloads',
-    icon: 'boxes',
-  },
-  {
-    kind: 'daemonsets',
-    label: 'DaemonSets',
-    group: 'Workloads',
-    icon: 'refresh-cw',
-  },
-  {
-    kind: 'statefulsets',
-    label: 'StatefulSets',
-    group: 'Workloads',
-    icon: 'database',
-  },
-  { kind: 'services', label: 'Services', group: 'Network', icon: 'route' },
-  { kind: 'ingresses', label: 'Ingresses', group: 'Network', icon: 'globe-2' },
-  {
-    kind: 'configmaps',
-    label: 'ConfigMaps',
-    group: 'Configuration',
-    icon: 'file-cog',
-  },
-  { kind: 'secrets', label: 'Secrets', group: 'Configuration', icon: 'key' },
-  { kind: 'pvcs', label: 'PVCs', group: 'Storage', icon: 'hard-drive' },
-  { kind: 'events', label: 'Events', group: 'Observability', icon: 'bell' },
-];
-
-const namespacedKinds = new Set<ResourceKind>([
-  'pods',
-  'deployments',
-  'daemonsets',
-  'statefulsets',
-  'services',
-  'ingresses',
-  'configmaps',
-  'secrets',
-  'pvcs',
-  'events',
-]);
+const navItems = dataplane.navItems;
 
 const app = document.querySelector<HTMLDivElement>('#app');
 
@@ -182,27 +49,31 @@ const state = {
   loading: true,
   error: '',
   theme: (localStorage.getItem('kube-cluster-ui-theme') === 'dark' ? 'dark' : 'light') as Theme,
-  density: (localStorage.getItem('kube-cluster-ui-density') === 'compact' ? 'compact' : 'normal') as Density,
+  density: ((localStorage.getItem('kube-cluster-ui-density') as Density | null) || 'cozy') as Density,
   kubeconfigDialog: false,
   kubeconfigError: '',
   sortColumn: 'Name',
   sortDirection: 'ascending' as SortDirection,
+  section: 'dashboard' as 'dashboard' | ResourceKind,
   view: 'dashboard' as 'dashboard' | 'about',
   about: null as AboutInfo | null,
 };
 
+/** Applies the selected theme to the document and persists it for the next launch. */
 function applyTheme(theme: Theme): void {
   state.theme = theme;
   document.documentElement.dataset.theme = theme;
   localStorage.setItem('kube-cluster-ui-theme', theme);
 }
 
+/** Applies the density mode to the document and persists the user's display preference. */
 function applyDensity(density: Density): void {
   state.density = density;
   document.documentElement.dataset.density = density;
   localStorage.setItem('kube-cluster-ui-density', density);
 }
 
+/** Walks a nested Kubernetes object safely and returns the value at the requested path. */
 export function objectValue(
   value: Record<string, unknown> | undefined,
   path: string[],
@@ -216,6 +87,7 @@ export function objectValue(
   }, value);
 }
 
+/** Converts API values into display text while normalizing missing and array values. */
 export function stringValue(value: unknown, fallback = '-'): string {
   if (value === undefined || value === null || value === '') {
     return fallback;
@@ -228,10 +100,12 @@ export function stringValue(value: unknown, fallback = '-'): string {
   return String(value);
 }
 
+/** Returns resource metadata or an empty object so callers can render incomplete API data safely. */
 export function metadata(resource: KubeResource): Metadata {
   return resource.metadata || {};
 }
 
+/** Resolves the human-readable name, preferring an Event's involved object when available. */
 export function resourceName(resource: KubeResource): string {
   if (resource.kind === 'Event') {
     return resource.involvedObject?.name || metadata(resource).name || '-';
@@ -240,6 +114,7 @@ export function resourceName(resource: KubeResource): string {
   return metadata(resource).name || '-';
 }
 
+/** Resolves a resource namespace and supplies cluster/default fallbacks for unscoped resources. */
 export function resourceNamespace(resource: KubeResource): string {
   return (
     metadata(resource).namespace ||
@@ -248,10 +123,12 @@ export function resourceNamespace(resource: KubeResource): string {
   );
 }
 
+/** Builds the stable namespace/name key used to select a resource in the inspector. */
 export function resourceId(resource: KubeResource): string {
   return `${resourceNamespace(resource)}:${metadata(resource).name || resourceName(resource)}`;
 }
 
+/** Formats an ISO timestamp as a compact elapsed time suitable for table cells. */
 export function age(isoDate?: string): string {
   if (!isoDate) {
     return '-';
@@ -273,6 +150,7 @@ export function age(isoDate?: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
+/** Counts ready pod containers and formats the result as ready/total. */
 export function podReady(resource: KubeResource): string {
   const statuses = objectValue(resource.status, ['containerStatuses']);
   if (!Array.isArray(statuses)) {
@@ -286,6 +164,7 @@ export function podReady(resource: KubeResource): string {
   return `${ready}/${statuses.length}`;
 }
 
+/** Reads workload replica counts from status/spec and formats them as ready/desired. */
 export function workloadReady(resource: KubeResource): string {
   const ready = stringValue(objectValue(resource.status, ['readyReplicas']), '0');
   const desired = stringValue(
@@ -297,6 +176,7 @@ export function workloadReady(resource: KubeResource): string {
   return `${ready}/${desired}`;
 }
 
+/** Interprets a node's Ready condition as the status text shown in the UI. */
 export function nodePressure(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
   if (!Array.isArray(conditions)) {
@@ -311,6 +191,7 @@ export function nodePressure(resource: KubeResource): string {
   return ready?.status === 'True' ? 'Ready' : 'NotReady';
 }
 
+/** Selects the status field appropriate to each Kubernetes resource category. */
 export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   if (kind === 'pods') {
     return stringValue(objectValue(resource.status, ['phase']));
@@ -339,6 +220,7 @@ export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   return stringValue(objectValue(resource.spec, ['type']));
 }
 
+/** Maps a resource status to the semantic color tone used by badges and status dots. */
 export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
   const status = statusFor(resource, kind).toLowerCase();
 
@@ -376,6 +258,7 @@ export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTo
   return 'neutral';
 }
 
+/** Defines the table columns and value readers for a resource category. */
 export function columnsFor(kind: ResourceKind): Column[] {
   const common: Column[] = [
     { label: 'Namespace', value: resourceNamespace },
@@ -566,6 +449,7 @@ export function columnsFor(kind: ResourceKind): Column[] {
   ];
 }
 
+/** Escapes untrusted Kubernetes values before inserting them into HTML strings. */
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
@@ -580,11 +464,22 @@ export function escapeHtml(value: string): string {
   });
 }
 
+/** Builds a sanitized YAML manifest, omitting server-managed metadata before display/copy. */
 export function formatManifest(resource: KubeResource): string {
   const manifest = {
-    ...resource,
+    apiVersion: resource.apiVersion ?? 'v1',
+    kind: resource.kind ?? 'Resource',
     metadata: { ...metadata(resource) },
-  } as KubeResource & {
+    ...(resource.spec ? { spec: resource.spec } : {}),
+    ...(resource.status ? { status: resource.status } : {}),
+    ...(resource.data ? { data: resource.data } : {}),
+    ...Object.fromEntries(
+      Object.entries(resource).filter(
+        ([key]) =>
+          !['apiVersion', 'kind', 'metadata', 'spec', 'status', 'data'].includes(key),
+      ),
+    ),
+  } as Record<string, unknown> & {
     metadata: Record<string, unknown>;
   };
 
@@ -593,6 +488,7 @@ export function formatManifest(resource: KubeResource): string {
   return YAML.stringify(manifest);
 }
 
+/** Adds lightweight syntax classes to escaped YAML for the manifest preview. */
 export function highlightYaml(yaml: string): string {
   return yaml
     .split('\n')
@@ -617,91 +513,7 @@ export function highlightYaml(yaml: string): string {
     .join('\n');
 }
 
-function getResources(kind = state.selectedKind): KubeResource[] {
-  return state.snapshot.resources[kind] || [];
-}
-
-function getVisibleResources(): KubeResource[] {
-  const query = state.query.trim().toLowerCase();
-
-  return getResources().filter((resource) => {
-    const namespaceMatches =
-      state.namespace === 'all' ||
-      !namespacedKinds.has(state.selectedKind) ||
-      resourceNamespace(resource) === state.namespace;
-
-    if (!namespaceMatches) {
-      return false;
-    }
-
-    if (!query) {
-      return true;
-    }
-
-    const searchable = [
-      resourceName(resource),
-      metadata(resource).name,
-      resourceNamespace(resource),
-      statusFor(resource, state.selectedKind),
-      resource.reason,
-      resource.message,
-      JSON.stringify(metadata(resource).labels || {}),
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase();
-
-    return searchable.includes(query);
-  });
-}
-
-function selectedResource(): KubeResource | undefined {
-  return getVisibleResources().find((resource) => {
-    return resourceId(resource) === state.selectedResourceId;
-  });
-}
-
-function namespaceOptions(): string[] {
-  const namespaces = state.snapshot.namespaces
-    .map((namespace) => metadata(namespace).name)
-    .filter((namespace): namespace is string => Boolean(namespace));
-
-  return ['all', ...Array.from(new Set(namespaces)).sort()];
-}
-
-export function contextLabel(context: ClusterContext): string {
-  return context.name || context.fileName || 'Unknown context';
-}
-
-function healthSummary() {
-  const pods = getResources('pods');
-  const nodes = getResources('nodes');
-  const events = getResources('events');
-  const workloads = [
-    ...getResources('deployments'),
-    ...getResources('daemonsets'),
-    ...getResources('statefulsets'),
-  ];
-  const runningPods = pods.filter((pod) => statusFor(pod, 'pods') === 'Running').length;
-  const readyNodes = nodes.filter((node) => statusFor(node, 'nodes') === 'Ready').length;
-  const warnings = events.filter((event) => event.type === 'Warning').length;
-  const readyWorkloads = workloads.filter((resource) => {
-    const ready = statusFor(resource, 'deployments').split('/');
-    return ready[0] === ready[1];
-  }).length;
-
-  return {
-    pods,
-    nodes,
-    events,
-    workloads,
-    runningPods,
-    readyNodes,
-    warnings,
-    readyWorkloads,
-  };
-}
-
+/** Rebuilds the active dashboard or about view and reconnects its DOM event handlers. */
 function render() {
   if (!app) {
     return;
@@ -714,9 +526,9 @@ function render() {
     return;
   }
 
-  const currentNav = navItems.find((item) => item.kind === state.selectedKind);
-  const resources = getVisibleResources();
-  const selected = selectedResource();
+  const currentNav = navItems.find((item) => item.kind === (state.section === 'dashboard' ? 'dashboard' : state.selectedKind));
+  const resources = dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query);
+  const selected = dataplane.selectedResource(resources, state.selectedResourceId);
 
   const groupedNav = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) {
@@ -727,49 +539,37 @@ function render() {
     return acc;
   }, {});
 
+  const contextPicker = `
+    <div class="context-picker">
+      <label class="context-control">
+        <select id="context-select" aria-label="Server context">
+          ${state.contexts.length
+            ? state.contexts
+                .map((context) => {
+                  const selected = context.id === state.selectedContextId ? 'selected' : '';
+                  return `<option value="${context.id}" ${selected}>${escapeHtml(contextLabel(context))}</option>`;
+                })
+                .join('')
+            : '<option value="">No contexts found</option>'}
+        </select>
+      </label>
+    </div>
+  `;
+
   app.innerHTML = `
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-mark">
-            <i data-lucide="network"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
+              <path d="M0 0h512v512H0z" fill="none" />
+              <path fill="#fff" fill-rule="evenodd" d="M37.1 25.2C16.6 25.2 0 41.8 0 62.3v387.3c0 20.5 16.6 37.1 37.1 37.1h437.7c20.5 0 37.1-16.6 37.1-37.1V62.3c0-20.5-16.6-37.1-37.1-37.1zm308 310.9c3.4-9.4 5.3-19.5 5.3-30.1c0-48.9-39.6-88.5-88.5-88.5c-10.2 0-19.9 1.7-29 4.9l-29.3-76.2c16-5.4 27.5-20.5 27.5-38.3c0-22.3-18.1-40.4-40.4-40.4s-40.4 18.1-40.4 40.4s18.1 40.4 40.4 40.4q2.55 0 5.1-.3l29.8 77.3c-20 9-36 25.2-44.8 45.4l-58.3-22q.9-3.9.9-8.1c0-19.1-15.5-34.6-34.6-34.6s-34.6 15.5-34.6 34.6s15.5 34.6 34.6 34.6c13.5 0 25.3-7.8 31-19.1l58.2 22c-2.9 8.8-4.5 18.1-4.5 27.9c0 14.3 3.4 27.8 9.4 39.8L139 373.2c-7.3-10.4-19.4-17.2-33.1-17.2c-22.3 0-40.4 18.1-40.4 40.4s18.1 40.4 40.4 40.4s40.4-18.1 40.4-40.4c0-5.8-1.2-11.3-3.4-16.2l43.7-27.4a88.38 88.38 0 0 0 75.2 41.7c35.5 0 66.1-20.9 80.2-51l40.1 16q-.9 3.9-.9 8.1c0 19.1 15.5 34.6 34.6 34.6s34.6-15.5 34.6-34.6s-15.5-34.6-34.6-34.6c-13.5 0-25.3 7.8-31 19.1z" />
+            </svg>
           </div>
           <div>
             <div class="brand-title">Kube Cluster UI</div>
             <div class="brand-subtitle">${escapeHtml(state.snapshot.context)}</div>
           </div>
-        </div>
-
-        <div class="connection ${state.loading ? 'loading' : state.snapshot.mode}">
-          <span></span>
-          ${
-            state.loading
-              ? 'Loading cluster data'
-              : state.snapshot.mode === 'live'
-                ? 'Connected via kubectl'
-                : 'Demo data'
-          }
-        </div>
-
-        <div class="context-picker">
-          <div class="context-heading">
-            <span>Server</span>
-            <button class="context-add" id="add-context" title="Add kubeconfig" aria-label="Add kubeconfig">
-              <i data-lucide="plus"></i>
-            </button>
-          </div>
-          <label class="context-control">
-            <select id="context-select">
-              ${state.contexts.length
-                ? state.contexts
-                    .map((context) => {
-                      const selected = context.id === state.selectedContextId ? 'selected' : '';
-                      return `<option value="${context.id}" ${selected}>${escapeHtml(contextLabel(context))}</option>`;
-                    })
-                    .join('')
-                : '<option value="">No contexts found</option>'}
-            </select>
-          </label>
         </div>
 
         ${state.kubeconfigDialog ? `
@@ -798,11 +598,21 @@ function render() {
             .map(([group, items]) => {
               return `
                 <section class="nav-group">
-                  <h2>${escapeHtml(group)}</h2>
+                  <div class="nav-group-heading">
+                    <h2>${escapeHtml(group)}</h2>
+                    ${group === 'Cluster' ? `
+                      <button class="context-add" id="add-context" title="Add kubeconfig" aria-label="Add kubeconfig">
+                        <i data-lucide="plus"></i>
+                      </button>
+                    ` : ''}
+                  </div>
+                  ${group === 'Cluster' ? contextPicker : ''}
                   ${items
                     .map((item) => {
-                      const count = getResources(item.kind).length;
-                      const active = item.kind === state.selectedKind ? 'active' : '';
+                      const count = item.kind === 'dashboard'
+                        ? ''
+                        : dataplane.getResources(state.snapshot, item.kind).length;
+                      const active = item.kind === state.section ? 'active' : '';
 
                       return `
                         <button class="nav-item ${active}" data-kind="${item.kind}">
@@ -810,7 +620,7 @@ function render() {
                             <i data-lucide="${item.icon}"></i>
                             ${escapeHtml(item.label)}
                           </span>
-                          <span class="nav-count">${count}</span>
+                          ${item.kind === 'dashboard' ? '' : `<span class="nav-count">${count}</span>`}
                         </button>
                       `;
                     })
@@ -830,10 +640,10 @@ function render() {
           </div>
 
           <div class="top-actions">
-            <label class="control">
-              <span>Namespace</span>
-              <select id="namespace">
-                ${namespaceOptions()
+            <label class="control" aria-label="Namespace">
+              <i data-lucide="layers-2" aria-hidden="true"></i>
+              <select id="namespace" aria-label="Namespace">
+                ${dataplane.namespaceOptions(state.snapshot)
                   .map((namespace) => {
                     const selectedOption = namespace === state.namespace ? 'selected' : '';
                     const label = namespace === 'all' ? 'All namespaces' : namespace;
@@ -856,22 +666,27 @@ function render() {
               <i data-lucide="${state.theme === 'dark' ? 'sun' : 'moon'}"></i>
             </button>
 
-            <button class="icon-button" id="density-toggle" title="Switch to ${state.density === 'compact' ? 'normal' : 'compact'} mode" aria-label="Switch to ${state.density === 'compact' ? 'normal' : 'compact'} mode">
-              <i data-lucide="${state.density === 'compact' ? 'maximize-2' : 'minimize-2'}"></i>
-            </button>
+            <label class="control density-control" aria-label="Density">
+              <i data-lucide="sliders-horizontal" aria-hidden="true"></i>
+              <select id="density-select" aria-label="Density" value="${state.density}">
+                <option value="cozy" ${state.density === 'cozy' ? 'selected' : ''}>Cozy</option>
+                <option value="normal" ${state.density === 'normal' ? 'selected' : ''}>Normal</option>
+                <option value="compact" ${state.density === 'compact' ? 'selected' : ''}>Compact</option>
+              </select>
+            </label>
           </div>
         </header>
 
         ${state.error ? `<div class="banner"><i data-lucide="info"></i>${escapeHtml(state.error)}</div>` : ''}
 
-        ${renderSummary()}
+        ${state.section === 'dashboard' ? renderSummary() : ''}
 
-        <section class="content">
+        ${state.section === 'dashboard' ? '' : `<section class="content">
           <section class="resource-panel">
             <div class="panel-header">
               <div>
                 <h2>${escapeHtml(currentNav?.label || 'Resources')}</h2>
-                <p>${resources.length} shown of ${getResources().length}</p>
+                <p>${resources.length} shown of ${dataplane.getResources(state.snapshot, state.selectedKind).length}</p>
               </div>
               <div class="panel-tools">
                 <button class="tool-button" id="clear-search">
@@ -889,8 +704,19 @@ function render() {
           <aside class="inspector ${selected ? 'open' : ''}">
             ${renderInspector(selected)}
           </aside>
-        </section>
+        </section>`}
       </main>
+
+      <footer class="status-bar connection ${state.loading ? 'loading' : state.snapshot.mode}" aria-live="polite">
+        <span></span>
+        ${
+          state.loading
+            ? 'Loading cluster data'
+            : state.snapshot.mode === 'live'
+              ? 'Connected via kubectl'
+              : 'Demo data'
+        }
+      </footer>
     </div>
   `;
 
@@ -898,6 +724,7 @@ function render() {
   bindEvents();
 }
 
+/** Produces the static about-page markup from the asynchronously loaded application metadata. */
 function renderAbout(): string {
   const about = state.about;
   if (!about) {
@@ -925,6 +752,7 @@ function renderAbout(): string {
   `;
 }
 
+/** Connects the about-page navigation control back to the dashboard. */
 function bindAboutEvents(): void {
   document.querySelector<HTMLButtonElement>('#about-back')?.addEventListener('click', () => {
     state.view = 'dashboard';
@@ -932,6 +760,7 @@ function bindAboutEvents(): void {
   });
 }
 
+/** Switches to the about view, loads metadata through preload, and falls back gracefully. */
 async function openAbout(): Promise<void> {
   state.view = 'about';
   state.about = null;
@@ -958,8 +787,9 @@ async function openAbout(): Promise<void> {
   }
 }
 
+/** Converts the current health summary into the four dashboard summary cards. */
 function renderSummary(): string {
-  const summary = healthSummary();
+  const summary = dataplane.healthSummary(state.snapshot);
   const podPercent = summary.pods.length
     ? Math.round((summary.runningPods / summary.pods.length) * 100)
     : 0;
@@ -980,6 +810,7 @@ function renderSummary(): string {
   `;
 }
 
+/** Renders one metric card with a bounded progress meter and semantic tone. */
 function summaryCard(
   title: string,
   value: string,
@@ -1001,6 +832,7 @@ function summaryCard(
   `;
 }
 
+/** Sorts visible resources and renders the resource table, including selection/status state. */
 function renderTable(resources: KubeResource[]): string {
   const columns = columnsFor(state.selectedKind);
   const sortableColumns = [
@@ -1087,6 +919,7 @@ function renderTable(resources: KubeResource[]): string {
   `;
 }
 
+/** Renders the selected resource's facts, labels, event message, and YAML manifest. */
 function renderInspector(resource: KubeResource | undefined): string {
   if (!resource) {
     return '';
@@ -1146,6 +979,7 @@ function renderInspector(resource: KubeResource | undefined): string {
   `;
 }
 
+/** Produces the optional event message section for the inspector. */
 function renderEventMessage(resource: KubeResource): string {
   return `
     <section class="detail-section">
@@ -1155,6 +989,7 @@ function renderEventMessage(resource: KubeResource): string {
   `;
 }
 
+/** Renders one label/value pair in the inspector facts grid. */
 function fact(label: string, value: string): string {
   return `
     <div class="fact">
@@ -1164,10 +999,12 @@ function fact(label: string, value: string): string {
   `;
 }
 
-export function kindLabel(kind: ResourceKind): string {
-  return navItems.find((item) => item.kind === kind)?.label || kind;
-}
+/** Re-exports the data-plane label resolver for existing renderer consumers. */
+export const kindLabel = dataplane.kindLabel;
+/** Re-exports the data-plane context label resolver for existing renderer consumers. */
+export const contextLabel = dataplane.contextLabel;
 
+/** Wires all dashboard controls to state updates, data loading, selection, and clipboard actions. */
 function bindEvents() {
   document.querySelector<HTMLButtonElement>('#add-context')?.addEventListener('click', () => {
     state.kubeconfigDialog = true;
@@ -1208,7 +1045,16 @@ function bindEvents() {
 
   document.querySelectorAll<HTMLButtonElement>('.nav-item').forEach((button) => {
     button.addEventListener('click', () => {
-      state.selectedKind = button.dataset.kind as ResourceKind;
+      const kind = button.dataset.kind;
+      if (kind === 'dashboard') {
+        state.section = 'dashboard';
+        state.selectedResourceId = '';
+        render();
+        return;
+      }
+
+      state.section = kind as ResourceKind;
+      state.selectedKind = state.section;
       state.selectedResourceId = '';
       render();
     });
@@ -1291,8 +1137,9 @@ function bindEvents() {
     render();
   });
 
-  document.querySelector<HTMLButtonElement>('#density-toggle')?.addEventListener('click', () => {
-    applyDensity(state.density === 'compact' ? 'normal' : 'compact');
+  document.querySelector<HTMLSelectElement>('#density-select')?.addEventListener('change', (event) => {
+    const target = event.target as HTMLSelectElement;
+    applyDensity(target.value as Density);
     render();
   });
 
@@ -1303,20 +1150,27 @@ function bindEvents() {
   });
 
   document.querySelector<HTMLButtonElement>('#copy-name')?.addEventListener('click', () => {
-    const resource = selectedResource();
+    const resource = dataplane.selectedResource(
+      dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query),
+      state.selectedResourceId,
+    );
     if (resource) {
       void navigator.clipboard.writeText(resourceName(resource));
     }
   });
 
   document.querySelector<HTMLButtonElement>('#copy-manifest')?.addEventListener('click', () => {
-    const resource = selectedResource();
+    const resource = dataplane.selectedResource(
+      dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query),
+      state.selectedResourceId,
+    );
     if (resource) {
       void navigator.clipboard.writeText(formatManifest(resource));
     }
   });
 }
 
+/** Loads available kubeconfig contexts through preload and selects a sensible default. */
 async function loadContexts() {
   try {
     if (!window.kubeApi) {
@@ -1337,6 +1191,7 @@ async function loadContexts() {
   }
 }
 
+/** Fetches the selected namespace snapshot, falling back to demo data on API failure. */
 async function loadSnapshot() {
   state.loading = true;
   state.error = '';
@@ -1365,6 +1220,7 @@ async function loadSnapshot() {
   }
 }
 
+/** Creates a complete deterministic-shaped demo snapshot used when kubectl is unavailable. */
 export function createDemoSnapshot(): Snapshot {
   return {
     context: 'kind-prod-east',
@@ -1438,10 +1294,12 @@ export function createDemoSnapshot(): Snapshot {
   };
 }
 
+/** Produces an ISO timestamp relative to now for realistic fixture ages. */
 export function timestamp(hoursOffset: number): string {
   return new Date(Date.now() + hoursOffset * 60 * 60 * 1000).toISOString();
 }
 
+/** Creates a namespace fixture with standard Kubernetes metadata and an Active phase. */
 export function namespace(name: string, hoursOffset: number): KubeResource {
   return {
     kind: 'Namespace',
@@ -1454,6 +1312,7 @@ export function namespace(name: string, hoursOffset: number): KubeResource {
   };
 }
 
+/** Creates a node fixture with role labels, capacity, version, and a Ready condition. */
 export function node(
   name: string,
   role: string,
@@ -1480,6 +1339,7 @@ export function node(
   };
 }
 
+/** Creates a pod fixture with container readiness, restart counts, and node placement. */
 export function pod(
   namespaceName: string,
   name: string,
@@ -1515,6 +1375,7 @@ export function pod(
   };
 }
 
+/** Creates a Deployment or StatefulSet fixture with replica and availability counters. */
 export function workload(
   kind: 'Deployment' | 'StatefulSet',
   namespaceName: string,
@@ -1541,6 +1402,7 @@ export function workload(
   };
 }
 
+/** Creates a DaemonSet fixture using scheduled and available node counts. */
 export function daemonset(
   namespaceName: string,
   name: string,
@@ -1566,6 +1428,7 @@ export function daemonset(
   };
 }
 
+/** Creates a Service fixture from a compact port specification such as 443:32443/TCP. */
 export function service(
   namespaceName: string,
   name: string,
@@ -1593,6 +1456,7 @@ export function service(
   };
 }
 
+/** Creates an Ingress fixture with its class name and host rules. */
 export function ingress(
   namespaceName: string,
   name: string,
@@ -1615,6 +1479,7 @@ export function ingress(
   };
 }
 
+/** Creates a ConfigMap fixture whose keys contain placeholder managed configuration. */
 export function configMap(
   namespaceName: string,
   name: string,
@@ -1636,6 +1501,7 @@ export function configMap(
   };
 }
 
+/** Creates a Secret fixture with redacted placeholder values for the requested keys. */
 export function secret(
   namespaceName: string,
   name: string,
@@ -1659,6 +1525,7 @@ export function secret(
   };
 }
 
+/** Creates a persistent volume claim fixture with storage class and capacity information. */
 export function pvc(
   namespaceName: string,
   name: string,
@@ -1680,6 +1547,7 @@ export function pvc(
   };
 }
 
+/** Creates an Event fixture tied to a named involved object and recent timestamp. */
 export function event(
   namespaceName: string,
   objectName: string,

@@ -1,11 +1,56 @@
 :root {
+  --density-scale: 1;
   color: #20242a;
   background: #f4f6f8;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     sans-serif;
-  font-size: 14px;
+  font-size: 1.0rem;
   line-height: 1.45;
+}
+
+[data-density="cozy"] {
+  --density-scale: 1;
+}
+
+[data-density="normal"] {
+  --density-scale: 0.9;
+}
+
+[data-density="compact"] {
+  --density-scale: 0.8;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+[data-density="normal"] {
+  font-size: 0.9rem;
+}
+
+[data-density="normal"] .workspace {
+  padding: 16px 16px 14px;
+}
+
+[data-density="normal"] .top-actions {
+  gap: 8px;
+}
+
+[data-density="normal"] .summary-grid {
+  gap: 9px;
+  margin: 8px 0 12px;
+}
+
+[data-density="normal"] .summary-card {
+  min-height: 82px;
+  padding: 11px;
+}
+
+[data-density="normal"] .inspector {
+  width: 66.6667%;
 }
 
 * {
@@ -37,11 +82,28 @@ button {
 .shell {
   display: grid;
   grid-template-columns: 268px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) 25px;
   height: 100vh;
   min-width: 1120px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(244, 246, 248, 0.72)),
     #eef2f4;
+}
+
+.status-bar.connection {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  justify-content: center;
+  width: 100%;
+  min-height: 25px;
+  max-height: 25px;
+  margin: 0;
+  padding: 0 10px;
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: #172027;
+  font-size: 0.6875rem;
 }
 
 .sidebar {
@@ -90,7 +152,7 @@ button {
 .brand-subtitle {
   overflow: hidden;
   color: #9fb1ba;
-  font-size: 12px;
+  font-size: 0.75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -106,7 +168,7 @@ button {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: #cad7dc;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .connection span {
@@ -125,7 +187,7 @@ button {
 }
 
 .context-picker {
-  margin: 0 14px 8px;
+  margin: 0 0 8px;
 }
 
 .context-heading {
@@ -134,7 +196,7 @@ button {
   justify-content: space-between;
   margin: 0 10px 6px;
   color: #9fb1ba;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -175,7 +237,7 @@ button {
 
 .context-control span {
   color: #9fb1ba;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -211,13 +273,13 @@ button {
 
 .dialog h2 {
   margin: 3px 0 0;
-  font-size: 21px;
+  font-size: 1.3125rem;
 }
 
 .dialog-copy {
   margin: 18px 0 9px;
   color: #58707a;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .dialog textarea {
@@ -237,7 +299,7 @@ button {
 .dialog-error {
   margin-top: 9px;
   color: #a33d3d;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .dialog-actions {
@@ -253,7 +315,7 @@ button {
   color: #fff;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -292,12 +354,22 @@ button {
 }
 
 .nav-group h2 {
-  margin: 16px 10px 8px;
   color: #81959f;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 740;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.nav-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 10px 8px;
+}
+
+.nav-group-heading h2 {
+  margin: 0;
 }
 
 .nav-item {
@@ -343,7 +415,7 @@ button {
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
   color: inherit;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 
@@ -400,21 +472,21 @@ button {
 
 .about-card h1 {
   margin-top: 5px;
-  font-size: 34px;
+  font-size: 2.125rem;
 }
 
 .about-version {
   margin-top: 7px;
   color: #62757d;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .about-description {
   max-width: 48ch;
   margin-top: 28px;
   color: #405761;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
 }
 
@@ -434,7 +506,7 @@ button {
 
 .about-details dt {
   color: #73848b;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -451,7 +523,7 @@ button {
 
 .about-author-email {
   color: #73848b;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .topbar {
@@ -491,7 +563,7 @@ button {
 
 .eyebrow {
   color: #64727b;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 720;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -507,7 +579,7 @@ p {
 h1 {
   margin-top: 2px;
   color: #151a1f;
-  font-size: 28px;
+  font-size: 1.75rem;
   font-weight: 780;
   letter-spacing: 0;
 }
@@ -536,7 +608,7 @@ h1 {
 }
 
 .control span {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -603,7 +675,7 @@ h1 {
 .tool-button.compact {
   height: 32px;
   padding: 0 9px;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .icon-button:hover,
@@ -765,7 +837,7 @@ h1 {
 }
 
 [data-density="compact"] {
-  font-size: 9.8px;
+  font-size: 0.73rem;
 }
 
 [data-density="compact"] .shell {
@@ -806,11 +878,11 @@ h1 {
 [data-density="compact"] .fact span,
 [data-density="compact"] .labels span,
 [data-density="compact"] .event-message {
-  font-size: 8.4px;
+  font-size: 0.525rem;
 }
 
 [data-density="compact"] .brand-title {
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 
 [data-density="compact"] .connection {
@@ -855,7 +927,7 @@ h1 {
 
 [data-density="compact"] .nav-label {
   gap: 6px;
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 
 [data-density="compact"] .nav-label svg {
@@ -866,7 +938,7 @@ h1 {
 [data-density="compact"] .nav-count {
   min-width: 18px;
   padding: 1px 4px;
-  font-size: 8.4px;
+  font-size: 0.525rem;
 }
 
 [data-density="compact"] .topbar {
@@ -876,7 +948,7 @@ h1 {
 
 [data-density="compact"] h1 {
   margin-top: 1px;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 [data-density="compact"] .top-actions {
@@ -936,7 +1008,7 @@ h1 {
 
 [data-density="compact"] .summary-card strong {
   margin: 7px 0;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 
 [data-density="compact"] .meter {
@@ -954,7 +1026,7 @@ h1 {
 }
 
 [data-density="compact"] .panel-header h2 {
-  font-size: 10px;
+  font-size: 0.625rem;
 }
 
 [data-density="compact"] th,
@@ -965,11 +1037,11 @@ h1 {
 
 [data-density="compact"] th {
   height: 24px;
-  font-size: 8.4px;
+  font-size: 0.525rem;
 }
 
 [data-density="compact"] td {
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 
 [data-density="compact"] table {
@@ -984,7 +1056,7 @@ h1 {
 
 [data-density="compact"] .name-cell strong {
   max-width: 198px;
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 
 [data-density="compact"] .status-dot {
@@ -996,11 +1068,11 @@ h1 {
   min-height: 15px;
   max-width: 108px;
   padding: 0 6px;
-  font-size: 8.4px;
+  font-size: 0.525rem;
 }
 
 [data-density="compact"] .inspector {
-  width: min(228px, 100%);
+  width: calc(50% * 0.8);
 }
 
 [data-density="compact"] .inspector-header,
@@ -1010,12 +1082,12 @@ h1 {
 
 [data-density="compact"] .inspector-header h2 {
   margin-top: 3px;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 [data-density="compact"] .inspector-header span,
 [data-density="compact"] .detail-section h3 {
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 
 [data-density="compact"] .facts {
@@ -1031,7 +1103,7 @@ h1 {
 
 [data-density="compact"] .fact strong {
   margin-top: 3px;
-  font-size: 9px;
+  font-size: 0.5625rem;
 }
 
 [data-density="compact"] .labels {
@@ -1046,7 +1118,7 @@ h1 {
 [data-density="compact"] pre {
   padding: 8px;
   border-radius: 5px;
-  font-size: 8.4px;
+  font-size: 0.525rem;
   line-height: 1.4;
 }
 
@@ -1061,7 +1133,7 @@ h1 {
   border-radius: 8px;
   background: #fff8e8;
   color: #795b19;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .banner svg {
@@ -1092,7 +1164,7 @@ h1 {
   gap: 10px;
   align-items: center;
   color: #66737c;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 740;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1107,7 +1179,7 @@ h1 {
   display: block;
   margin: 12px 0;
   color: #171d22;
-  font-size: 27px;
+  font-size: 1.6875rem;
   font-weight: 790;
   letter-spacing: 0;
 }
@@ -1179,14 +1251,14 @@ h1 {
 
 .panel-header h2 {
   color: #171d22;
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 760;
 }
 
 .panel-header p {
   margin-top: 2px;
   color: #72808a;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .panel-tools {
@@ -1222,7 +1294,7 @@ th {
   height: 40px;
   background: #f9fafb;
   color: #6b7881;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 760;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1246,7 +1318,7 @@ th {
 
 td {
   color: #37424a;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 tbody tr {
@@ -1284,7 +1356,7 @@ tbody tr.active {
 
 .name-cell span {
   color: #80909a;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .status-dot {
@@ -1316,7 +1388,7 @@ tbody tr.active {
   border-radius: 999px;
   background: #eef2f4;
   color: #52606a;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 730;
   text-overflow: ellipsis;
 }
@@ -1342,7 +1414,7 @@ tbody tr.active {
   top: 0;
   right: 0;
   bottom: 0;
-  width: min(640px, 100%);
+  width: 66.6667%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1378,7 +1450,7 @@ tbody tr.active {
 
 .inspector-header span {
   color: #70808a;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 740;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -1389,7 +1461,7 @@ tbody tr.active {
   overflow: hidden;
   margin-top: 4px;
   color: #151a1f;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 780;
   letter-spacing: 0;
   -webkit-box-orient: vertical;
@@ -1415,7 +1487,7 @@ tbody tr.active {
 .fact span {
   display: block;
   color: #71808a;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
@@ -1424,7 +1496,7 @@ tbody tr.active {
   overflow: hidden;
   margin-top: 4px;
   color: #1e252b;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 740;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1437,7 +1509,7 @@ tbody tr.active {
 
 .detail-section h3 {
   color: #25313a;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 780;
 }
 
@@ -1455,7 +1527,7 @@ tbody tr.active {
   border-radius: 999px;
   background: #eef4f5;
   color: #53646d;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 650;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1464,7 +1536,7 @@ tbody tr.active {
 .event-message {
   margin-top: 9px;
   color: #4c5962;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .manifest-section {
@@ -1493,7 +1565,7 @@ pre {
   background: #11181d;
   color: #d7e1e6;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
+  font-size: 0.75rem;
   line-height: 1.55;
 }
 
@@ -1543,7 +1615,7 @@ pre {
 
 .empty-state h3 {
   color: #2a343c;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 760;
 }
 
@@ -1552,7 +1624,7 @@ pre {
   margin-top: 6px;
   max-width: 260px;
   color: #71808a;
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 @media (max-width: 1220px) {

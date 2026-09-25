@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { parseKubectlCommand } from '../src/kubectl-command';
 import {
   age,
   columnsFor,
@@ -44,6 +45,24 @@ function resourceWithStatus(status: Record<string, unknown>): KubeResource {
 }
 
 describe('renderer pure helpers', () => {
+  it.each([
+    ['k get pods', ['get', 'pods']],
+    ['kubectl get pods -n "blue team"', ['get', 'pods', '-n', 'blue team']],
+    ['k', []],
+    ['kubectl', []],
+  ])('parses kubectl command aliases: %s', (command, expected) => {
+    expect(parseKubectlCommand(command)).toEqual(expected);
+  });
+
+  it.each([
+    '',
+    '   ',
+    'get pods --context prod',
+    'k get pods --kubeconfig custom-config',
+  ])('rejects empty commands and context overrides: %s', (command) => {
+    expect(() => parseKubectlCommand(command)).toThrow();
+  });
+
   // Existing paths should resolve to their values, while missing nested keys
   // should return undefined instead of throwing.
   it.each([

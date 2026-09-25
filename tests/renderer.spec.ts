@@ -1,23 +1,23 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 const views = [
-  ['Nodes', 'nodes'],
-  ['Namespaces', 'namespaces'],
-  ['Pods', 'pods'],
-  ['Deployments', 'deployments'],
-  ['DaemonSets', 'daemonsets'],
-  ['StatefulSets', 'statefulsets'],
-  ['ReplicaSets', 'replicasets'],
-  ['Jobs', 'jobs'],
-  ['CronJobs', 'cronjobs'],
-  ['PV', 'pvs'],
-  ['Storage Class', 'storageclasses'],
-  ['Services', 'services'],
-  ['Ingresses', 'ingresses'],
-  ['ConfigMaps', 'configmaps'],
-  ['Secrets', 'secrets'],
-  ['PVCs', 'pvcs'],
-  ['Events', 'events'],
+  ['Nodes', 'nodes', '02-nodes'],
+  ['Namespaces', 'namespaces', '03-namespaces'],
+  ['Pods', 'pods', '04-pods'],
+  ['Deployments', 'deployments', '05-deployments'],
+  ['DaemonSets', 'daemonsets', '06-daemonsets'],
+  ['StatefulSets', 'statefulsets', '07-statefulsets'],
+  ['ReplicaSets', 'replicasets', '08-replicasets'],
+  ['Jobs', 'jobs', '09-jobs'],
+  ['CronJobs', 'cronjobs', '10-cronjobs'],
+  ['PV', 'pvs', '11-pvs'],
+  ['Storage Class', 'storageclasses', '12-storageclasses'],
+  ['Services', 'services', '13-services'],
+  ['Ingresses', 'ingresses', '14-ingresses'],
+  ['ConfigMaps', 'configmaps', '15-configmaps'],
+  ['Secrets', 'secrets', '16-secrets'],
+  ['PVCs', 'pvcs', '17-pvcs'],
+  ['Events', 'events', '18-events'],
 ] as const;
 
 const expectedColumns: Record<string, string[]> = {
@@ -40,6 +40,14 @@ const expectedColumns: Record<string, string[]> = {
   namespaces: ['Name', 'Status', 'Age', 'Labels'],
 };
 
+async function openNavigationItem(page: Page, kind: string): Promise<void> {
+  const item = page.locator(`.nav-item[data-kind="${kind}"]`);
+  if (!(await item.isVisible())) {
+    await page.locator('.nav-group').filter({ has: item }).locator('.nav-group-toggle').click();
+  }
+  await item.click();
+}
+
 // These end-to-end tests exercise the renderer through a real browser page.
 // They intentionally use the application's demo fallback so the suite remains
 // repeatable and does not require kubectl, a kubeconfig, or a live cluster.
@@ -54,13 +62,17 @@ test.describe('Kube Cluster UI demo data', () => {
   // The navigation should expose every supported Kubernetes resource category.
   // Clicking each item must update the heading and render at least one row,
   // proving that the view-specific table configuration and demo data agree.
-  for (const [label, kind] of views) {
+  for (const [label, kind, snapshotName] of views) {
     test(`${label} view renders demo resources`, async ({ page }) => {
-      await page.locator(`.nav-item[data-kind="${kind}"]`).click();
+      await openNavigationItem(page, kind);
 
       await expect(page.locator('h1')).toHaveText(label);
       await expect(page.locator('table')).toBeVisible();
       await expect(page.locator('tbody tr')).not.toHaveCount(0);
+      await page.screenshot({
+        path: `docs/snapshots/${snapshotName}.png`,
+        fullPage: true,
+      });
     });
   }
 
@@ -68,6 +80,13 @@ test.describe('Kube Cluster UI demo data', () => {
   // It should show the summary cards and keep data-view controls out of the
   // summary-only surface.
   test('Dashboard view renders the summary grid', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.kubeApi = {
+        checkKubectl: async () => ({ available: true, message: '' }),
+      } as NonNullable<Window['kubeApi']>;
+    });
+    await page.reload();
+
     await page.locator('.nav-item[data-kind="dashboard"]').click();
 
     await expect(page.locator('.nav-item[data-kind="dashboard"]')).toHaveClass(/active/);
@@ -75,6 +94,220 @@ test.describe('Kube Cluster UI demo data', () => {
     await expect(page.locator('.summary-grid')).toBeVisible();
     await expect(page.locator('.summary-card')).toHaveCount(4);
     await expect(page.locator('table')).toHaveCount(0);
+    await page.screenshot({ path: 'docs/snapshots/01-dashboard.png', fullPage: true });
+  });
+
+  test('disables and dims the terminal when kubectl is unavailable', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.kubeApi = {
+        checkKubectl: async () => ({
+          available: false,
+          message: 'kubectl is not available on PATH. Install kubectl and restart the app.',
+        }),
+      } as NonNullable<Window['kubeApi']>;
+    });
+    await page.reload();
+
+    await expect(page.locator('.dashboard-terminal-grid')).toHaveClass(/kubectl-disabled/);
+    await expect(page.locator('.kubectl-disabled-overlay')).toBeVisible();
+    await expect(page.locator('.kubectl-disabled-message')).toContainText(
+      'kubectl is not available on PATH. Install kubectl and restart the app.',
+    );
+    await expect(page.locator('#kubectl-command')).toBeDisabled();
+    await expect(page.locator('#kubectl-run')).toBeDisabled();
+    await expect(page.locator('#kubectl-output-toggle')).toBeDisabled();
+    await expect(page.locator('#kubectl-clear-history')).toBeDisabled();
+    await page.screenshot({ path: 'docs/snapshots/19-kubectl-unavailable.png', fullPage: true });
+  });
+
+  test('runs kubectl with the selected context and highlights its output', async ({ page }) => {
+    await page.addInitScript(() => {
+      const mockKubeApi: Partial<NonNullable<Window['kubeApi']>> = {
+        setContext: async (contextId) => ({
+          defaultPath: '/tmp/kubeconfig',
+          contexts: [
+            {
+              id: 'test-config::dev',
+              name: 'dev',
+              cluster: 'demo-cluster',
+              user: 'demo-user',
+              namespace: 'default',
+              filePath: '/tmp/kubeconfig',
+              fileName: 'kubeconfig',
+              isCurrent: contextId === 'test-config::dev',
+            },
+            {
+              id: 'test-config::prod',
+              name: 'prod',
+              cluster: 'production-cluster',
+              user: 'prod-user',
+              namespace: 'default',
+              filePath: '/tmp/kubeconfig',
+              fileName: 'kubeconfig',
+              isCurrent: contextId === 'test-config::prod',
+            },
+          ],
+          selectedContextId: contextId,
+        }),
+        getContexts: async () => ({
+          defaultPath: '/tmp/kubeconfig',
+          contexts: [
+            {
+              id: 'test-config::dev',
+              name: 'dev',
+              cluster: 'demo-cluster',
+              user: 'demo-user',
+              namespace: 'default',
+              filePath: '/tmp/kubeconfig',
+              fileName: 'kubeconfig',
+              isCurrent: true,
+            },
+            {
+              id: 'test-config::prod',
+              name: 'prod',
+              cluster: 'production-cluster',
+              user: 'prod-user',
+              namespace: 'default',
+              filePath: '/tmp/kubeconfig',
+              fileName: 'kubeconfig',
+              isCurrent: false,
+            },
+          ],
+          selectedContextId: 'test-config::dev',
+        }),
+        checkKubectl: async () => ({ available: true, message: '' }),
+        getSnapshot: async (_namespace, contextId) => ({
+          context: contextId === 'test-config::prod' ? 'prod' : 'dev',
+          mode: 'live' as const,
+          namespaces: [],
+          resources: {},
+        }),
+        runKubectl: async (command, contextId) => {
+          document.documentElement.dataset.lastKubectlCommand = command;
+          document.documentElement.dataset.lastKubectlContext = contextId || '';
+          return {
+            stdout: 'apiVersion: v1\nkind: Pod\nmetadata:\n  name: demo\nstatus:\n  phase: Running\n',
+            stderr: '',
+            exitCode: 0,
+          };
+        },
+      };
+      window.kubeApi = mockKubeApi as NonNullable<Window['kubeApi']>;
+    });
+    await page.reload();
+    await expect(page.locator('.connection')).toHaveText('Connected via kubectl');
+    await expect(page.locator('.dashboard-terminal-grid')).toBeVisible();
+    await expect(page.locator('.dashboard-terminal-grid')).toHaveCSS(
+      'grid-template-columns',
+      /^\d+(?:\.\d+)?px \d+(?:\.\d+)?px$/,
+    );
+
+    await page.locator('#kubectl-command').fill('kubectl get pod demo -o yaml');
+    await page.locator('#kubectl-run').click();
+
+    await expect(page.locator('#kubectl-output .yaml-key').first()).toContainText('apiVersion');
+    await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
+    await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-command', 'kubectl get pod demo -o yaml');
+    await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-context', 'test-config::dev');
+
+    const outputToggle = page.locator('#kubectl-output-toggle');
+    const columnRatio = async () => page.locator('.dashboard-terminal-grid').evaluate((grid) => {
+      const [commandColumn, outputColumn] = getComputedStyle(grid)
+        .gridTemplateColumns.split(' ')
+        .map(Number.parseFloat);
+      return outputColumn / commandColumn;
+    });
+
+    await expect(outputToggle).toHaveAttribute('aria-expanded', 'false');
+    await outputToggle.click();
+    await expect(outputToggle).toHaveAttribute('aria-expanded', 'true');
+    await expect.poll(columnRatio).toBeGreaterThan(3.9);
+    await outputToggle.click();
+    await expect(outputToggle).toHaveAttribute('aria-expanded', 'false');
+    await expect.poll(columnRatio).toBeLessThan(1.1);
+
+    await page.locator('#kubectl-clear-output').click();
+    await expect(page.locator('#kubectl-output')).toContainText('Awaiting output');
+    await expect(page.locator('.kubectl-exit-status')).toHaveCount(0);
+    await expect(page.locator('.kubectl-history-entry')).toHaveCount(1);
+
+    await page.locator('#kubectl-command').fill('kubectl get pods');
+    await page.locator('#kubectl-run').click();
+    await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
+    await expect(page.locator('.kubectl-history-entry')).toHaveCount(2);
+
+    await page.locator('#kubectl-clear-history').click();
+    await expect(page.locator('.kubectl-history-entry')).toHaveCount(0);
+    await expect(page.locator('#kubectl-output .yaml-key').first()).toContainText('apiVersion');
+    await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
+
+    await page.locator('#kubectl-command').fill('kubectl get namespaces');
+    await page.locator('#kubectl-run').click();
+    await expect(page.locator('.kubectl-history-entry')).toHaveCount(1);
+    await page.locator('#context-select').selectOption('test-config::prod');
+    await expect(page.locator('.kubectl-output-muted')).toHaveText('Awaiting output');
+    await expect(page.locator('.kubectl-exit-status')).toHaveCount(0);
+    await expect(page.locator('.kubectl-history-entry')).toHaveCount(1);
+    await expect(page.locator('.kubectl-context')).toContainText('prod');
+
+    const commandInput = page.locator('#kubectl-command');
+    await commandInput.fill('k');
+    await commandInput.press('Tab');
+    await expect(commandInput).toHaveValue('kubectl ');
+    expect(await commandInput.evaluate((input) => (input as HTMLInputElement).selectionStart)).toBe(8);
+
+    await commandInput.fill('k get pods');
+    await expect(commandInput).toHaveValue('kubectl get pods');
+    expect(await commandInput.evaluate((input) => (input as HTMLInputElement).selectionStart)).toBe(16);
+    await page.locator('#kubectl-run').click();
+    await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
+    await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-command', 'kubectl get pods');
+
+    await commandInput.fill('k');
+    await page.locator('#kubectl-run').click();
+    await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
+    await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-command', 'k');
+  });
+
+  test('navigation groups can be collapsed and expanded', async ({ page }) => {
+    const groups = page.locator('.nav-group');
+    const firstToggle = page.locator('.nav-group-toggle').first();
+
+    await page.locator('#density-select').selectOption('cozy');
+    await expect(firstToggle).toHaveCSS('font-size', '22px');
+    await page.locator('#density-select').selectOption('compact');
+    const compactFontRatio = await firstToggle.evaluate((element) => {
+      const fontSize = Number.parseFloat(getComputedStyle(element).fontSize);
+      const rootFontSize = Number.parseFloat(
+        getComputedStyle(document.documentElement).fontSize,
+      );
+      return Number((fontSize / rootFontSize).toFixed(2));
+    });
+    expect(compactFontRatio).toBe(1.05);
+    await page.locator('#density-select').selectOption('cozy');
+
+    for (const group of await groups.all()) {
+      const toggle = group.locator('.nav-group-toggle');
+      const content = group.locator('.nav-group-content');
+      const groupName = await toggle.locator('span').innerText();
+      const startsExpanded = !['Storage', 'Observability'].includes(groupName);
+
+      await expect(toggle).toHaveAttribute('aria-expanded', String(startsExpanded));
+      if (startsExpanded) {
+        await expect(content).toBeVisible();
+      } else {
+        await expect(content).toBeHidden();
+      }
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', String(!startsExpanded));
+      if (startsExpanded) {
+        await expect(content).toBeHidden();
+      } else {
+        await expect(content).toBeVisible();
+      }
+      await toggle.click();
+      await expect(toggle).toHaveAttribute('aria-expanded', String(startsExpanded));
+    }
   });
 
   // Pod rows should use the same semantic status dot as other resource views,
@@ -96,7 +329,7 @@ test.describe('Kube Cluster UI demo data', () => {
   test('navigates through every left navigation section with complete views', async ({ page }) => {
     for (const [label, kind] of views) {
       const navigationItem = page.locator(`.nav-item[data-kind="${kind}"]`);
-      await navigationItem.click();
+      await openNavigationItem(page, kind);
 
       await expect(navigationItem).toHaveClass(/active/);
       await expect(page.locator('h1')).toHaveText(label);

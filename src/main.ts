@@ -1,12 +1,15 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from 'electron';
+import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import os from 'node:os';
 import path from 'node:path';
 import { nativeImage } from "electron";
 import started from 'electron-squirrel-startup';
 import * as k8s from '@kubernetes/client-node';
 import { updateElectronApp } from 'update-electron-app';
 import packageMetadata from '../package.json';
+import { parseKubectlCommand } from './kubectl-command';
 
 // Handle updates and auto-restart the app when a new version is available.
 updateElectronApp();
@@ -485,7 +488,58 @@ const readResource = async (
   }
 };
 
+const executeKubectl = (args: string[]) => {
+  return new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve, reject) => {
+    execFile(
+      'kubectl',
+      args,
+      { encoding: 'utf8', maxBuffer: 5 * 1024 * 1024, timeout: 120_000, windowsHide: true },
+      (error, stdout, stderr) => {
+        if (error && typeof error.code !== 'number') {
+          reject(new Error(
+            error.killed
+              ? 'kubectl command timed out after 120 seconds.'
+              : `Unable to run kubectl: ${error.message}`,
+          ));
+          return;
+        }
+
+        resolve({
+          stdout: String(stdout),
+          stderr: String(stderr),
+          exitCode: error ? Number(error.code) : 0,
+        });
+      },
+    );
+  });
+};
+
+const checkKubectlAvailability = (): Promise<{ available: boolean; message: string }> => {
+  return new Promise((resolve) => {
+    execFile(
+      'kubectl',
+      ['version', '--client'],
+      { encoding: 'utf8', timeout: 10_000, windowsHide: true },
+      (error) => {
+        if (!error || typeof error.code === 'number') {
+          resolve({ available: true, message: '' });
+          return;
+        }
+
+        resolve({
+          available: false,
+          message: error.killed
+            ? 'The kubectl availability check timed out.'
+            : 'kubectl is not available on PATH. Install kubectl and restart the app.',
+        });
+      },
+    );
+  });
+};
+
 const registerKubernetesHandlers = () => {
+  ipcMain.handle('cluster:checkKubectl', checkKubectlAvailability);
+
   ipcMain.handle('cluster:getContexts', async () => {
     const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
     const { contexts, selectedContext } = await resolveSelectedContext();
@@ -647,6 +701,45 @@ const registerKubernetesHandlers = () => {
       const clients = createClients(selectedContext);
 
       return readResource(kind, namespace, name, clients);
+    },
+  );
+
+  ipcMain.handle(
+    'cluster:runKubectl',
+    async (_event, command: string, contextId = '') => {
+      if (typeof command !== 'string') {
+        throw new Error('A kubectl command is required.');
+      }
+
+      const commandArgs = parseKubectlCommand(command);
+      const { selectedContext } = await resolveSelectedContext(contextId);
+      if (!selectedContext) {
+        throw new Error('No Kubernetes context is selected.');
+      }
+
+      let kubeconfigPath = selectedContext.filePath;
+      let temporaryDirectory = '';
+
+      try {
+        if (selectedContext.kubeconfig) {
+          temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'kube-cluster-ui-'));
+          kubeconfigPath = path.join(temporaryDirectory, 'config');
+          await fs.writeFile(kubeconfigPath, selectedContext.kubeconfig, {
+            encoding: 'utf8',
+            mode: 0o600,
+          });
+        }
+
+        return await executeKubectl([
+          '--kubeconfig', kubeconfigPath,
+          '--context', selectedContext.name,
+          ...commandArgs,
+        ]);
+      } finally {
+        if (temporaryDirectory) {
+          await fs.rm(temporaryDirectory, { force: true, recursive: true }).catch((): void => undefined);
+        }
+      }
     },
   );
 };

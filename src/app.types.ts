@@ -74,6 +74,19 @@ export type Snapshot = {
   resources: Partial<Record<ResourceKind, KubeResource[]>>;
 };
 
+/** Result returned by one kubectl command executed for the selected context. */
+export type KubectlResult = {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+};
+
+/** Availability status for the local kubectl executable. */
+export type KubectlAvailability = {
+  available: boolean;
+  message: string;
+};
+
 /** A selectable kubeconfig context together with the file and cluster identity it represents. */
 export type ClusterContext = {
   id: string;
@@ -160,6 +173,12 @@ export type KubeApi = {
     name: string,
     contextId?: string,
   ) => Promise<KubeResource>;
+
+  /** Runs a kubectl command without a shell and binds it to the selected context. */
+  runKubectl: (command: string, contextId?: string) => Promise<KubectlResult>;
+
+  /** Checks whether kubectl can be launched on the local system. */
+  checkKubectl: () => Promise<KubectlAvailability>;
 };
 
 /** Presentation metadata for one grouped sidebar entry, including Dashboard or a resource view. */

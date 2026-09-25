@@ -93,7 +93,7 @@ button {
 .status-bar.connection {
   grid-column: 1 / -1;
   grid-row: 2;
-  justify-content: center;
+  justify-content: space-between;
   width: 100%;
   min-height: 25px;
   max-height: 25px;
@@ -171,19 +171,50 @@ button {
   font-size: 0.75rem;
 }
 
-.connection span {
+.connection-indicator,
+.kubectl-detection-indicator {
+  display: inline-block;
   width: 8px;
   height: 8px;
+  flex: 0 0 auto;
   border-radius: 999px;
+}
+
+.connection-indicator {
   background: #f3ba4d;
 }
 
-.connection.live span {
+.connection.live .connection-indicator {
   background: #4fc08d;
 }
 
-.connection.loading span {
+.connection.loading .connection-indicator {
   background: #6f95d8;
+}
+
+.cluster-status,
+.kubectl-detection {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.kubectl-detection {
+  margin-left: auto;
+}
+
+.kubectl-detection-indicator {
+  background: #f3ba4d;
+}
+
+.kubectl-detection.available .kubectl-detection-indicator {
+  background: #4fc08d;
+}
+
+.kubectl-detection.unavailable .kubectl-detection-indicator {
+  background: #df6d61;
 }
 
 .context-picker {
@@ -922,7 +953,8 @@ h1 {
   padding: 5px 6px;
 }
 
-[data-density="compact"] .connection span {
+[data-density="compact"] .connection-indicator,
+[data-density="compact"] .kubectl-detection-indicator {
   width: 5px;
   height: 5px;
 }

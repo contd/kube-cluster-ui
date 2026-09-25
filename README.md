@@ -86,7 +86,7 @@ npx playwright install chromium chromium-headless-shell
 npm run test:e2e
 ```
 
-The tests run against the renderer with no kubeconfig available, so they use the same built-in demo data shown by the app when it cannot connect to Kubernetes. They cover every resource view and basic inspector, sorting, theme, and compact-mode interactions.
+The tests use a deterministic mocked live cluster, so they do not require kubectl, a kubeconfig, or a live Kubernetes cluster. They cover every resource view and basic inspector, sorting, theme, and compact-mode interactions. The e2e run records `docs/snapshots/video.webm` and generates `docs/video-preview.gif` with ffmpeg.
 
 ### Run unit tests
 
@@ -118,5 +118,6 @@ npm start
 npm run package:builder
 npm run test:e2e
 npm run test:unit
+npm run generate:video-preview
 npm run test
 ```

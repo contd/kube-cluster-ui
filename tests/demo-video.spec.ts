@@ -4,16 +4,17 @@ import { test, expect } from '@playwright/test';
 // reviewed as a demonstration of the main dashboard workflow.
 test.use({ video: 'on' });
 
-// This suite intentionally uses the renderer's demo fallback. That keeps the
-// recorded flow deterministic and makes it independent of kubectl or a live
-// Kubernetes cluster.
+// This suite uses a deterministic mocked cluster. That keeps the recorded flow
+// independent of kubectl, a kubeconfig, or a live Kubernetes cluster.
 test.describe('demo video flow', () => {
   // Start from the dashboard and wait for the data source indicator before any
   // navigation. This prevents the recording from capturing an intermediate
   // loading state as if it were part of the intended workflow.
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript({ path: 'tests/kube-api-mock.js' });
     await page.goto('/');
-    await expect(page.locator('.connection')).toHaveText('Demo data');
+    await expect(page.locator('.cluster-status')).toHaveText('Connected to test-cluster');
+    await expect(page.locator('.banner')).toHaveCount(0);
   });
 
   // Demonstrates the primary browsing path: verify the default Pods view,
@@ -39,5 +40,12 @@ test.describe('demo video flow', () => {
     await expect(page.locator('#manifest')).toContainText('metadata:');
     await expect(page.locator('#manifest')).not.toContainText('managedFields:');
     await page.waitForTimeout(1800);
+
+    const video = page.video();
+    if (!video) {
+      throw new Error('Playwright video recording is unavailable.');
+    }
+    await page.context().close();
+    await video.saveAs('docs/snapshots/video.webm');
   });
 });

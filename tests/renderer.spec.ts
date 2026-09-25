@@ -48,27 +48,24 @@ async function openNavigationItem(page: Page, kind: string): Promise<void> {
   await item.click();
 }
 
-// These end-to-end tests exercise the renderer through a real browser page.
-// They intentionally use the application's demo fallback so the suite remains
-// repeatable and does not require kubectl, a kubeconfig, or a live cluster.
-test.describe('Kube Cluster UI demo data', () => {
-  // Every test starts from a freshly loaded dashboard and verifies that the
-  // preload/data-loading path has settled on the deterministic demo dataset.
+// These end-to-end tests use a deterministic live-cluster preload mock so they
+// do not require kubectl, a kubeconfig, or a real cluster.
+test.describe('Kube Cluster UI views', () => {
+  // Start with a connected test cluster and ensure no fallback banner leaks
+  // into screenshots or view assertions.
   test.beforeEach(async ({ page }) => {
-    await page.addInitScript(() => {
-      window.kubeApi = {
-        checkKubectl: async () => ({ available: true, message: '' }),
-      } as NonNullable<Window['kubeApi']>;
-    });
+    await page.addInitScript({ path: 'tests/kube-api-mock.js' });
     await page.goto('/');
-    await expect(page.locator('.connection')).toHaveText('Demo data');
+    await expect(page.locator('.cluster-status')).toHaveText('Connected to test-cluster');
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl detected');
+    await expect(page.locator('.banner')).toHaveCount(0);
   });
 
   // The navigation should expose every supported Kubernetes resource category.
   // Clicking each item must update the heading and render at least one row,
-  // proving that the view-specific table configuration and demo data agree.
+  // proving that the view-specific table configuration matches its fixture.
   for (const [label, kind, snapshotName] of views) {
-    test(`${label} view renders demo resources`, async ({ page }) => {
+    test(`${label} view renders test resources`, async ({ page }) => {
       await openNavigationItem(page, kind);
 
       await expect(page.locator('h1')).toHaveText(label);
@@ -97,12 +94,12 @@ test.describe('Kube Cluster UI demo data', () => {
 
   test('disables and dims the terminal when kubectl is unavailable', async ({ page }) => {
     await page.addInitScript(() => {
-      window.kubeApi = {
-        checkKubectl: async () => ({
+      if (window.kubeApi) {
+        window.kubeApi.checkKubectl = async () => ({
           available: false,
           message: 'kubectl is not available on PATH. Install kubectl and restart the app.',
-        }),
-      } as NonNullable<Window['kubeApi']>;
+        });
+      }
     });
     await page.reload();
 
@@ -193,7 +190,8 @@ test.describe('Kube Cluster UI demo data', () => {
       window.kubeApi = mockKubeApi as NonNullable<Window['kubeApi']>;
     });
     await page.reload();
-    await expect(page.locator('.connection')).toHaveText('Connected via kubectl');
+    await expect(page.locator('.cluster-status')).toHaveText('Connected to dev');
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl detected');
     await expect(page.locator('.dashboard-terminal-grid')).toBeVisible();
     await expect(page.locator('.dashboard-terminal-grid')).toHaveCSS(
       'grid-template-columns',
@@ -243,6 +241,7 @@ test.describe('Kube Cluster UI demo data', () => {
     await page.locator('#kubectl-run').click();
     await expect(page.locator('.kubectl-history-entry')).toHaveCount(1);
     await page.locator('#context-select').selectOption('test-config::prod');
+    await expect(page.locator('.cluster-status')).toHaveText('Connected to prod');
     await expect(page.locator('.kubectl-output-muted')).toHaveText('Awaiting output');
     await expect(page.locator('.kubectl-exit-status')).toHaveCount(0);
     await expect(page.locator('.kubectl-history-entry')).toHaveCount(1);

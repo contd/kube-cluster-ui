@@ -688,6 +688,23 @@ function render() {
   const currentNav = navItems.find((item) => item.kind === (state.section === 'dashboard' ? 'dashboard' : state.selectedKind));
   const resources = dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query);
   const selected = dataplane.selectedResource(resources, state.selectedResourceId);
+  const clusterStatus = state.loading
+    ? `Connecting to ${state.snapshot.context}`
+    : state.snapshot.mode === 'live'
+      ? `Connected to ${state.snapshot.context}`
+      : state.snapshot.context === 'No Kubernetes context'
+        ? 'No cluster connected'
+        : `Cluster: ${state.snapshot.context}`;
+  const kubectlStatus = state.kubectlAvailability === null
+    ? 'Checking kubectl'
+    : state.kubectlAvailability.available
+      ? 'kubectl detected'
+      : 'kubectl not detected';
+  const kubectlStatusTone = state.kubectlAvailability === null
+    ? 'checking'
+    : state.kubectlAvailability.available
+      ? 'available'
+      : 'unavailable';
 
   const groupedNav = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) {
@@ -878,14 +895,14 @@ function render() {
       </main>
 
       <footer class="status-bar connection ${state.loading ? 'loading' : state.snapshot.mode}" aria-live="polite">
-        <span></span>
-        ${
-          state.loading
-            ? 'Loading cluster data'
-            : state.snapshot.mode === 'live'
-              ? 'Connected via kubectl'
-              : 'Demo data'
-        }
+        <div class="cluster-status">
+          <span class="connection-indicator"></span>
+          <span>${escapeHtml(clusterStatus)}</span>
+        </div>
+        <div class="kubectl-detection ${kubectlStatusTone}">
+          <span class="kubectl-detection-indicator"></span>
+          <span>${escapeHtml(kubectlStatus)}</span>
+        </div>
       </footer>
     </div>
   `;

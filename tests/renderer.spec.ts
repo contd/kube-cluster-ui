@@ -55,6 +55,11 @@ test.describe('Kube Cluster UI demo data', () => {
   // Every test starts from a freshly loaded dashboard and verifies that the
   // preload/data-loading path has settled on the deterministic demo dataset.
   test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.kubeApi = {
+        checkKubectl: async () => ({ available: true, message: '' }),
+      } as NonNullable<Window['kubeApi']>;
+    });
     await page.goto('/');
     await expect(page.locator('.connection')).toHaveText('Demo data');
   });
@@ -80,13 +85,6 @@ test.describe('Kube Cluster UI demo data', () => {
   // It should show the summary cards and keep data-view controls out of the
   // summary-only surface.
   test('Dashboard view renders the summary grid', async ({ page }) => {
-    await page.addInitScript(() => {
-      window.kubeApi = {
-        checkKubectl: async () => ({ available: true, message: '' }),
-      } as NonNullable<Window['kubeApi']>;
-    });
-    await page.reload();
-
     await page.locator('.nav-item[data-kind="dashboard"]').click();
 
     await expect(page.locator('.nav-item[data-kind="dashboard"]')).toHaveClass(/active/);
@@ -353,6 +351,8 @@ test.describe('Kube Cluster UI demo data', () => {
     await expect(page.locator('.workspace')).toBeVisible();
     await expect(page.locator('h1')).toHaveText('Dashboard');
     await expect(page.locator('.summary-grid')).toBeVisible();
+    await expect(page.locator('.kubectl-disabled-overlay')).toHaveCount(0);
+    await expect(page.locator('#kubectl-command')).toBeEnabled();
     await expect(page.locator('table')).toHaveCount(0);
     await page.screenshot({
       path: 'docs/main-interface.png',

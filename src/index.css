@@ -1335,7 +1335,7 @@ tbody tr.active {
 
 .name-cell {
   display: grid;
-  grid-template-columns: 10px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 10px;
   align-items: center;
   min-width: 280px;
@@ -1376,6 +1376,57 @@ tbody tr.active {
 
 .status-dot.danger {
   background: #d85d51;
+}
+
+.pod-container-squares {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  min-height: 18px;
+}
+
+.pod-container-square {
+  display: block;
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 2px;
+  background: #e7b52f;
+}
+
+.labels-preview {
+  position: relative;
+  display: inline-block;
+  color: #3f8fe5;
+  cursor: help;
+}
+
+.labels-popover {
+  position: absolute;
+  z-index: 8;
+  bottom: calc(100% + 8px);
+  left: 0;
+  display: none;
+  min-width: 260px;
+  max-width: 420px;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+  border: 1px solid #cfd7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #37424a;
+  box-shadow: 0 8px 24px rgba(18, 28, 36, 0.18);
+  white-space: normal;
+}
+
+.labels-preview:hover .labels-popover,
+.labels-preview:focus-within .labels-popover {
+  display: block;
+}
+
+.labels-popover ul {
+  margin: 0;
+  padding-left: 18px;
 }
 
 .pill {

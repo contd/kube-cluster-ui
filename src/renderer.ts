@@ -201,12 +201,20 @@ export function statusFor(resource: KubeResource, kind: ResourceKind): string {
     return nodePressure(resource);
   }
 
+  if (kind === 'namespaces') {
+    return stringValue(objectValue(resource.status, ['phase']));
+  }
+
   if (kind === 'events') {
     return resource.type || 'Normal';
   }
 
   if (kind === 'pvcs') {
     return stringValue(objectValue(resource.status, ['phase']));
+  }
+
+  if (kind === 'pvs') {
+    return dataplane.pvStatus(resource);
   }
 
   if (kind === 'secrets') {
@@ -277,6 +285,13 @@ export function columnsFor(kind: ResourceKind): Column[] {
             .join(', ') || 'worker',
       },
       {
+        label: 'Taints',
+        value: (resource) => {
+          const taints = objectValue(resource.spec, ['taints']);
+          return Array.isArray(taints) ? String(taints.length) : '0';
+        },
+      },
+      {
         label: 'Version',
         value: (resource) =>
           stringValue(objectValue(resource.status, ['nodeInfo', 'kubeletVersion'])),
@@ -289,7 +304,10 @@ export function columnsFor(kind: ResourceKind): Column[] {
       {
         label: 'Memory',
         value: (resource) =>
-          stringValue(objectValue(resource.status, ['capacity', 'memory'])),
+          dataplane.humanReadableMemory(
+            objectValue(resource.status, ['allocatable', 'memory']) ||
+              objectValue(resource.status, ['capacity', 'memory']),
+          ),
       },
       { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
     ];
@@ -298,7 +316,7 @@ export function columnsFor(kind: ResourceKind): Column[] {
   if (kind === 'pods') {
     return [
       ...common,
-      { label: 'Ready', value: podReady },
+      { label: 'Containers', value: dataplane.podContainerCount },
       { label: 'Status', value: (resource) => statusFor(resource, kind) },
       {
         label: 'Restarts',
@@ -319,31 +337,89 @@ export function columnsFor(kind: ResourceKind): Column[] {
         },
       },
       { label: 'Node', value: (resource) => stringValue(objectValue(resource.spec, ['nodeName'])) },
+      { label: 'Controlled By', value: dataplane.controlledBy },
     ];
   }
 
-  if (['deployments', 'daemonsets', 'statefulsets'].includes(kind)) {
+  if (kind === 'daemonsets') {
     return [
-      ...common,
-      { label: 'Ready', value: (resource) => statusFor(resource, kind) },
-      {
-        label: 'Up To Date',
-        value: (resource) =>
-          stringValue(
-            objectValue(resource.status, ['updatedReplicas']) ||
-              objectValue(resource.status, ['currentNumberScheduled']),
-            '0',
-          ),
-      },
-      {
-        label: 'Available',
-        value: (resource) =>
-          stringValue(
-            objectValue(resource.status, ['availableReplicas']) ||
-              objectValue(resource.status, ['numberAvailable']),
-            '0',
-          ),
-      },
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Desired', value: dataplane.daemonsetDesired },
+      { label: 'Current', value: dataplane.daemonsetCurrent },
+      { label: 'Ready', value: dataplane.daemonsetReady },
+      { label: 'Up-to-Date', value: dataplane.daemonsetUpToDate },
+      { label: 'Available', value: dataplane.daemonsetAvailable },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'replicasets') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Desired', value: dataplane.replicasetDesired },
+      { label: 'Current', value: dataplane.replicasetCurrent },
+      { label: 'Ready', value: dataplane.replicasetReady },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'jobs') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Start Time', value: dataplane.jobStartTime },
+      { label: 'End Time', value: dataplane.jobEndTime },
+      { label: 'Ready', value: dataplane.jobReady },
+      { label: 'Succeded', value: dataplane.jobSucceeded },
+      { label: 'Terminating', value: dataplane.jobTerminating },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'cronjobs') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Schedule', value: dataplane.cronJobSchedule },
+      { label: 'Suspend', value: dataplane.cronJobSuspend },
+      { label: 'Active', value: dataplane.cronJobActive },
+      { label: 'Last Schedule', value: dataplane.cronJobLastSchedule },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'pvs') {
+    return [
+      { label: 'Storage Class', value: dataplane.pvStorageClass },
+      { label: 'Capacity', value: dataplane.pvCapacity },
+      { label: 'Claim', value: dataplane.pvClaim },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+      { label: 'Status', value: dataplane.pvStatus },
+    ];
+  }
+
+  if (kind === 'storageclasses') {
+    return [
+      { label: 'Provisioner', value: dataplane.storageClassProvisioner },
+      { label: 'Reclaim Policy', value: dataplane.storageClassReclaimPolicy },
+      { label: 'Volume Binding Mode', value: dataplane.storageClassBindingMode },
+      { label: 'Allow Volume Expansion', value: dataplane.storageClassExpansion },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'namespaces') {
+    return [
+      { label: 'Status', value: (resource) => statusFor(resource, kind) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+      { label: 'Labels', value: dataplane.labelsSummary },
+    ];
+  }
+
+  if (['deployments', 'statefulsets'].includes(kind)) {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Pods', value: dataplane.workloadPods },
+      { label: 'Replicas', value: dataplane.workloadReplicas },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
     ];
   }
 
@@ -889,6 +965,12 @@ function renderTable(resources: KubeResource[]): string {
             const active = resourceId(resource) === state.selectedResourceId ? 'active' : '';
             const status = statusFor(resource, state.selectedKind);
             const tone = statusTone(resource, state.selectedKind);
+            const containerStatuses = objectValue(resource.status, ['containerStatuses']);
+            const containerCount = Array.isArray(containerStatuses) ? containerStatuses.length : 0;
+            const labels = metadata(resource).labels || {};
+            const labelsPopover = Object.entries(labels)
+              .map(([key, value]) => `<li>${escapeHtml(key)}=${escapeHtml(value)}</li>`)
+              .join('') || '<li>None</li>';
 
             return `
               <tr class="${active}" data-resource-id="${escapeHtml(resourceId(resource))}">
@@ -897,13 +979,17 @@ function renderTable(resources: KubeResource[]): string {
                     <span class="status-dot ${tone}"></span>
                     <div>
                       <strong>${escapeHtml(resourceName(resource))}</strong>
-                      <span>${escapeHtml(metadata(resource).name || resourceName(resource))}</span>
+                      <span></span>
                     </div>
                   </div>
                 </td>
                 ${columns
                   .map((column) => {
-                    const value = column.label === 'Status' || column.label === 'Type'
+                    const value = column.label === 'Labels' && state.selectedKind === 'namespaces'
+                      ? `<span class="labels-preview"><span>${escapeHtml(dataplane.labelsSummary(resource))}</span><span class="labels-popover"><ul>${labelsPopover}</ul></span></span>`
+                      : column.label === 'Containers' && state.selectedKind === 'pods'
+                      ? `<span class="pod-container-squares" aria-label="${containerCount} containers">${Array.from({ length: containerCount }, () => '<span class="pod-container-square"></span>').join('')}</span>`
+                      : column.label === 'Status' || column.label === 'Type'
                       ? `<span class="pill ${tone}">${escapeHtml(status)}</span>`
                       : escapeHtml(column.value(resource));
 
@@ -1056,7 +1142,11 @@ function bindEvents() {
       state.section = kind as ResourceKind;
       state.selectedKind = state.section;
       state.selectedResourceId = '';
-      render();
+      if (state.section === 'replicasets' || state.section === 'jobs' || state.section === 'cronjobs' || state.section === 'pvs' || state.section === 'storageclasses' || state.section === 'namespaces') {
+        void loadResources(state.section);
+      } else {
+        render();
+      }
     });
   });
 
@@ -1220,6 +1310,32 @@ async function loadSnapshot() {
   }
 }
 
+/** Loads a resource collection on demand and merges it into the current snapshot. */
+async function loadResources(kind: ResourceKind): Promise<void> {
+  state.loading = true;
+  state.error = '';
+  render();
+
+  try {
+    if (!window.kubeApi?.getResources) {
+      throw new Error('Preload API is unavailable.');
+    }
+
+    const resources = await window.kubeApi.getResources(
+      kind,
+      state.namespace,
+      state.selectedContextId,
+    );
+    state.snapshot.resources[kind] = resources;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown resource error.';
+    state.error = `Using demo data because ReplicaSets could not be loaded: ${message}`;
+  } finally {
+    state.loading = false;
+    render();
+  }
+}
+
 /** Creates a complete deterministic-shaped demo snapshot used when kubectl is unavailable. */
 export function createDemoSnapshot(): Snapshot {
   return {
@@ -1259,6 +1375,54 @@ export function createDemoSnapshot(): Snapshot {
       statefulsets: [
         workload('StatefulSet', 'observability', 'prometheus-server', 1, 1, -25),
         workload('StatefulSet', 'payments', 'postgres-ledger', 3, 3, -33),
+      ],
+      replicasets: [
+        {
+          kind: 'ReplicaSet',
+          metadata: {
+            name: 'api-gateway-6dc9f8949b',
+            namespace: 'platform',
+            creationTimestamp: timestamp(-18),
+          },
+          spec: { replicas: 3 },
+          status: { replicas: 3, readyReplicas: 3 },
+        },
+      ],
+      jobs: [
+        {
+          kind: 'Job',
+          metadata: { name: 'nightly-ledger-sync', namespace: 'payments', creationTimestamp: timestamp(-6) },
+          spec: { completions: 1 },
+          status: { succeeded: 1, startTime: timestamp(-5.5), completionTime: timestamp(-5) },
+        },
+      ],
+      cronjobs: [
+        {
+          kind: 'CronJob',
+          metadata: { name: 'hourly-ledger-cleanup', namespace: 'payments', creationTimestamp: timestamp(-24) },
+          spec: { schedule: '0 * * * *', suspend: false },
+          status: { active: [], lastScheduleTime: timestamp(-1) },
+        },
+      ],
+      pvs: [
+        {
+          kind: 'PersistentVolume',
+          metadata: { name: 'payments-ledger-pv', creationTimestamp: timestamp(-36) },
+          spec: { storageClassName: 'gp3', capacity: { storage: '200Gi' }, claimRef: { namespace: 'payments', name: 'postgres-ledger-data-0' } },
+          status: { phase: 'Bound' },
+        },
+      ],
+      storageclasses: [
+        {
+          kind: 'StorageClass',
+          metadata: { name: 'gp3', creationTimestamp: timestamp(-120) },
+          provisioner: 'ebs.csi.aws.com',
+          spec: {
+            reclaimPolicy: 'Delete',
+            volumeBindingMode: 'WaitForFirstConsumer',
+            allowVolumeExpansion: true,
+          },
+        },
       ],
       services: [
         service('platform', 'api-gateway', 'LoadBalancer', '10.96.22.91', '443:32443/TCP', -18),

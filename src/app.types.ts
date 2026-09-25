@@ -1,15 +1,21 @@
 /** Identifies the Kubernetes resource collection shown in the navigation and tables. */
 export type ResourceKind =
   | 'nodes'
+  | 'namespaces'
   | 'pods'
   | 'deployments'
   | 'daemonsets'
   | 'statefulsets'
+  | 'replicasets'
+  | 'jobs'
+  | 'cronjobs'
   | 'services'
   | 'ingresses'
   | 'configmaps'
   | 'secrets'
   | 'pvcs'
+  | 'pvs'
+  | 'storageclasses'
   | 'events';
 
 /** Semantic tone used to color resource statuses and dashboard indicators. */
@@ -43,6 +49,7 @@ export type KubeResource = {
   apiVersion?: string;
   kind?: string;
   type?: string;
+  provisioner?: string;
   metadata?: Metadata;
   status?: Record<string, unknown>;
   spec?: Record<string, unknown>;
@@ -64,7 +71,7 @@ export type Snapshot = {
   mode: 'live' | 'demo';
   error?: string;
   namespaces: KubeResource[];
-  resources: Record<ResourceKind, KubeResource[]>;
+  resources: Partial<Record<ResourceKind, KubeResource[]>>;
 };
 
 /** A selectable kubeconfig context together with the file and cluster identity it represents. */
@@ -130,6 +137,13 @@ export type KubeApi = {
    *   context selected by the application is used.
    */
   getSnapshot: (namespace: string, contextId?: string) => Promise<Snapshot>;
+
+  /** Loads one resource collection on demand without refreshing the full snapshot. */
+  getResources: (
+    kind: ResourceKind,
+    namespace: string,
+    contextId?: string,
+  ) => Promise<KubeResource[]>;
 
   /**
    * Retrieves one named Kubernetes resource for detailed inspection.

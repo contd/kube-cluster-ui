@@ -2,15 +2,21 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 type ResourceKind =
   | 'nodes'
+  | 'namespaces'
   | 'pods'
   | 'deployments'
   | 'daemonsets'
   | 'statefulsets'
+  | 'replicasets'
+  | 'jobs'
+  | 'cronjobs'
   | 'services'
   | 'ingresses'
   | 'configmaps'
   | 'secrets'
   | 'pvcs'
+  | 'pvs'
+  | 'storageclasses'
   | 'events';
 
 contextBridge.exposeInMainWorld('kubeApi', {
@@ -21,6 +27,8 @@ contextBridge.exposeInMainWorld('kubeApi', {
     ipcRenderer.invoke('cluster:setContext', contextId),
   getSnapshot: (namespace: string, contextId: string) =>
     ipcRenderer.invoke('cluster:getSnapshot', namespace, contextId),
+  getResources: (kind: ResourceKind, namespace: string, contextId: string) =>
+    ipcRenderer.invoke('cluster:getResources', kind, namespace, contextId),
   getResource: (
     kind: ResourceKind,
     namespace: string,

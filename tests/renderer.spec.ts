@@ -2,10 +2,16 @@ import { test, expect } from '@playwright/test';
 
 const views = [
   ['Nodes', 'nodes'],
+  ['Namespaces', 'namespaces'],
   ['Pods', 'pods'],
   ['Deployments', 'deployments'],
   ['DaemonSets', 'daemonsets'],
   ['StatefulSets', 'statefulsets'],
+  ['ReplicaSets', 'replicasets'],
+  ['Jobs', 'jobs'],
+  ['CronJobs', 'cronjobs'],
+  ['PV', 'pvs'],
+  ['Storage Class', 'storageclasses'],
   ['Services', 'services'],
   ['Ingresses', 'ingresses'],
   ['ConfigMaps', 'configmaps'],
@@ -15,17 +21,23 @@ const views = [
 ] as const;
 
 const expectedColumns: Record<string, string[]> = {
-  nodes: ['Name', 'Status', 'Roles', 'Version', 'CPU', 'Memory', 'Age'],
-  pods: ['Name', 'Namespace', 'Age', 'Ready', 'Status', 'Restarts', 'Node'],
-  deployments: ['Name', 'Namespace', 'Age', 'Ready', 'Up To Date', 'Available'],
-  daemonsets: ['Name', 'Namespace', 'Age', 'Ready', 'Up To Date', 'Available'],
-  statefulsets: ['Name', 'Namespace', 'Age', 'Ready', 'Up To Date', 'Available'],
+  nodes: ['Name', 'Status', 'Roles', 'Taints', 'Version', 'CPU', 'Memory', 'Age'],
+  pods: ['Name', 'Namespace', 'Age', 'Containers', 'Status', 'Restarts', 'Node', 'Controlled By'],
+  deployments: ['Name', 'Namespace', 'Pods', 'Replicas', 'Age'],
+  daemonsets: ['Name', 'Namespace', 'Desired', 'Current', 'Ready', 'Up-to-Date', 'Available', 'Age'],
+  statefulsets: ['Name', 'Namespace', 'Pods', 'Replicas', 'Age'],
+  replicasets: ['Name', 'Namespace', 'Desired', 'Current', 'Ready', 'Age'],
+  jobs: ['Name', 'Namespace', 'Start Time', 'End Time', 'Ready', 'Succeded', 'Terminating', 'Age'],
+  cronjobs: ['Name', 'Namespace', 'Schedule', 'Suspend', 'Active', 'Last Schedule', 'Age'],
+  pvs: ['Name', 'Storage Class', 'Capacity', 'Claim', 'Age', 'Status'],
+  storageclasses: ['Name', 'Provisioner', 'Reclaim Policy', 'Volume Binding Mode', 'Allow Volume Expansion', 'Age'],
   services: ['Name', 'Namespace', 'Age', 'Type', 'Cluster IP', 'Ports'],
   ingresses: ['Name', 'Namespace', 'Age', 'Class', 'Hosts'],
   configmaps: ['Name', 'Namespace', 'Age', 'Keys'],
   secrets: ['Name', 'Namespace', 'Age', 'Type', 'Keys'],
   pvcs: ['Name', 'Namespace', 'Age', 'Status', 'Capacity', 'StorageClass'],
   events: ['Name', 'Namespace', 'Type', 'Reason', 'Object', 'Count', 'Last Seen'],
+  namespaces: ['Name', 'Status', 'Age', 'Labels'],
 };
 
 // These end-to-end tests exercise the renderer through a real browser page.
@@ -63,6 +75,17 @@ test.describe('Kube Cluster UI demo data', () => {
     await expect(page.locator('.summary-grid')).toBeVisible();
     await expect(page.locator('.summary-card')).toHaveCount(4);
     await expect(page.locator('table')).toHaveCount(0);
+  });
+
+  // Pod rows should use the same semantic status dot as other resource views,
+  // while the Containers column exposes one yellow square per container.
+  test('shows container squares while retaining the standard Pod status dot', async ({ page }) => {
+    await page.locator('.nav-item[data-kind="pods"]').click();
+
+    const firstPod = page.locator('tbody tr').first();
+    await expect(firstPod.locator('.status-dot')).toHaveCount(1);
+    await expect(firstPod.locator('.pod-container-square')).toHaveCount(2);
+    await expect(firstPod.locator('.pod-container-square').first()).toHaveCSS('background-color', 'rgb(231, 181, 47)');
   });
 
   // Walks through the entire sidebar in its user-facing order, starting at

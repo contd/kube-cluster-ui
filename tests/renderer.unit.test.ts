@@ -136,6 +136,126 @@ describe('renderer pure helpers', () => {
     expect(columnsFor(kind).length).toBeGreaterThanOrEqual(minimum);
   });
 
+  // The Nodes Taints column reports cardinality rather than exposing the full
+  // taint payload in a compact table cell.
+  it('counts node taints', () => {
+    const taintsColumn = columnsFor('nodes').find((column) => column.label === 'Taints');
+
+    expect(taintsColumn?.value({ spec: { taints: [{ effect: 'NoSchedule' }, { effect: 'NoExecute' }] } })).toBe('2');
+    expect(taintsColumn?.value({ spec: {} })).toBe('0');
+  });
+
+  // Node memory should prefer allocatable capacity and render Kubernetes
+  // quantities in compact human-readable binary units.
+  it('formats node memory as human-readable capacity', () => {
+    const memoryColumn = columnsFor('nodes').find((column) => column.label === 'Memory');
+
+    expect(memoryColumn?.value({ status: { allocatable: { memory: '32768000Ki' } } })).toBe('31.3 Gi');
+    expect(memoryColumn?.value({ status: { capacity: { memory: '65536000Ki' } } })).toBe('62.5 Gi');
+  });
+
+  // Job lifecycle columns should expose the raw API timestamps, pod counts,
+  // and deletion state returned by Kubernetes.
+  it('reads Job lifecycle columns from Kubernetes results', () => {
+    const columns = columnsFor('jobs');
+    const startColumn = columns.find((column) => column.label === 'Start Time');
+    const endColumn = columns.find((column) => column.label === 'End Time');
+    const readyColumn = columns.find((column) => column.label === 'Ready');
+    const succeededColumn = columns.find((column) => column.label === 'Succeded');
+    const terminatingColumn = columns.find((column) => column.label === 'Terminating');
+    const resource = {
+      metadata: { deletionTimestamp: '2026-01-01T01:02:00Z' },
+      status: {
+        startTime: '2026-01-01T00:00:00Z',
+        completionTime: '2026-01-01T01:02:00Z',
+        ready: 1,
+        succeeded: 1,
+      },
+    } as KubeResource;
+
+    expect(startColumn?.value(resource)).toBe('2026-01-01T00:00:00Z');
+    expect(endColumn?.value(resource)).toBe('2026-01-01T01:02:00Z');
+    expect(readyColumn?.value(resource)).toBe('1');
+    expect(succeededColumn?.value(resource)).toBe('1');
+    expect(terminatingColumn?.value(resource)).toBe('Yes');
+  });
+
+  // CronJob columns should expose schedule configuration and controller state.
+  it('reads CronJob columns from Kubernetes results', () => {
+    const columns = columnsFor('cronjobs');
+    const schedule = columns.find((column) => column.label === 'Schedule');
+    const suspend = columns.find((column) => column.label === 'Suspend');
+    const active = columns.find((column) => column.label === 'Active');
+    const lastSchedule = columns.find((column) => column.label === 'Last Schedule');
+    const resource = {
+      spec: { schedule: '0 * * * *', suspend: true },
+      status: { active: [{ name: 'job-1' }], lastScheduleTime: '2026-01-01T01:02:00Z' },
+    } as KubeResource;
+
+    expect(schedule?.value(resource)).toBe('0 * * * *');
+    expect(suspend?.value(resource)).toBe('Yes');
+    expect(active?.value(resource)).toBe('1');
+    expect(lastSchedule?.value(resource)).toBe('2026-01-01T01:02:00Z');
+  });
+
+  // Persistent Volume columns should expose storage, claim, age, and phase.
+  it('reads Persistent Volume columns from Kubernetes results', () => {
+    const columns = columnsFor('pvs');
+    const storageClass = columns.find((column) => column.label === 'Storage Class');
+    const capacity = columns.find((column) => column.label === 'Capacity');
+    const claim = columns.find((column) => column.label === 'Claim');
+    const status = columns.find((column) => column.label === 'Status');
+    const resource = {
+      metadata: { creationTimestamp: '2026-01-01T00:00:00Z' },
+      spec: { storageClassName: 'gp3', capacity: { storage: '200Gi' }, claimRef: { namespace: 'payments', name: 'ledger-data' } },
+      status: { phase: 'Bound' },
+    } as KubeResource;
+
+    expect(storageClass?.value(resource)).toBe('gp3');
+    expect(capacity?.value(resource)).toBe('200Gi');
+    expect(claim?.value(resource)).toBe('payments/ledger-data');
+    expect(status?.value(resource)).toBe('Bound');
+  });
+
+  // Namespace columns should expose label count, lifecycle phase, and age.
+  it('reads Namespace columns from Kubernetes results', () => {
+    const columns = columnsFor('namespaces');
+    const labels = columns.find((column) => column.label === 'Labels');
+    const status = columns.find((column) => column.label === 'Status');
+    const resource = {
+      metadata: { labels: { team: 'platform', tier: 'system' } },
+      status: { phase: 'Active' },
+    } as KubeResource;
+
+    expect(labels?.value(resource)).toBe('team=platform, tier=system');
+    expect(status?.value(resource)).toBe('Active');
+  });
+
+  // PV status pills use status.phase and normalize every non-Bound phase to
+  // the requested Unbound display value.
+  it('maps Persistent Volume phases to display status', () => {
+    expect(statusFor({ status: { phase: 'Bound' } }, 'pvs')).toBe('Bound');
+    expect(statusFor({ status: { phase: 'Available' } }, 'pvs')).toBe('Unbound');
+  });
+
+  // StorageClass columns should expose provisioning policy and expansion data.
+  it('reads StorageClass columns from Kubernetes results', () => {
+    const columns = columnsFor('storageclasses');
+    const provisioner = columns.find((column) => column.label === 'Provisioner');
+    const reclaimPolicy = columns.find((column) => column.label === 'Reclaim Policy');
+    const bindingMode = columns.find((column) => column.label === 'Volume Binding Mode');
+    const expansion = columns.find((column) => column.label === 'Allow Volume Expansion');
+    const resource = {
+      provisioner: 'ebs.csi.aws.com',
+      spec: { reclaimPolicy: 'Delete', volumeBindingMode: 'WaitForFirstConsumer', allowVolumeExpansion: true },
+    } as KubeResource;
+
+    expect(provisioner?.value(resource)).toBe('ebs.csi.aws.com');
+    expect(reclaimPolicy?.value(resource)).toBe('Delete');
+    expect(bindingMode?.value(resource)).toBe('WaitForFirstConsumer');
+    expect(expansion?.value(resource)).toBe('Yes');
+  });
+
   // Markup-significant characters must be escaped before HTML interpolation.
   it.each([
     ['<script>', '&lt;script&gt;'],
@@ -195,8 +315,8 @@ describe('renderer pure helpers', () => {
   it('creates two demo snapshots with complete resource collections', () => {
     const first = createDemoSnapshot();
     const second = createDemoSnapshot();
-    expect(Object.keys(first.resources)).toHaveLength(11);
-    expect(Object.keys(second.resources)).toHaveLength(11);
+    expect(Object.keys(first.resources)).toHaveLength(16);
+    expect(Object.keys(second.resources)).toHaveLength(16);
     expect(first.resources.pods.length).toBeGreaterThan(1);
     expect(second.resources.events.length).toBeGreaterThan(1);
   });

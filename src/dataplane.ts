@@ -13,15 +13,21 @@ import type {
 export const navItems: NavItem[] = [
   { kind: 'dashboard', label: 'Dashboard', group: 'Cluster', icon: 'layout-dashboard' },
   { kind: 'nodes', label: 'Nodes', group: 'Cluster', icon: 'server' },
+  { kind: 'namespaces', label: 'Namespaces', group: 'Cluster', icon: 'layers-2' },
   { kind: 'pods', label: 'Pods', group: 'Workloads', icon: 'box' },
   { kind: 'deployments', label: 'Deployments', group: 'Workloads', icon: 'boxes' },
   { kind: 'daemonsets', label: 'DaemonSets', group: 'Workloads', icon: 'refresh-cw' },
   { kind: 'statefulsets', label: 'StatefulSets', group: 'Workloads', icon: 'database' },
+  { kind: 'replicasets', label: 'ReplicaSets', group: 'Workloads', icon: 'copy' },
+  { kind: 'jobs', label: 'Jobs', group: 'Workloads', icon: 'briefcase-business' },
+  { kind: 'cronjobs', label: 'CronJobs', group: 'Workloads', icon: 'calendar-clock' },
   { kind: 'services', label: 'Services', group: 'Network', icon: 'route' },
   { kind: 'ingresses', label: 'Ingresses', group: 'Network', icon: 'globe-2' },
   { kind: 'configmaps', label: 'ConfigMaps', group: 'Configuration', icon: 'file-cog' },
   { kind: 'secrets', label: 'Secrets', group: 'Configuration', icon: 'key' },
   { kind: 'pvcs', label: 'PVCs', group: 'Storage', icon: 'hard-drive' },
+  { kind: 'pvs', label: 'PV', group: 'Storage', icon: 'database' },
+  { kind: 'storageclasses', label: 'Storage Class', group: 'Storage', icon: 'layers-3' },
   { kind: 'events', label: 'Events', group: 'Observability', icon: 'bell' },
 ];
 
@@ -69,6 +75,49 @@ export function stringValue(value: unknown, fallback = '-'): string {
   }
 
   return String(value);
+}
+
+/** Converts Kubernetes memory quantities into compact binary-unit display text. */
+export function humanReadableMemory(value: unknown): string {
+  const raw = stringValue(value, '').trim();
+  const match = raw.match(/^([0-9]+(?:\.[0-9]+)?)(Ei|Pi|Ti|Gi|Mi|Ki|E|P|T|G|M|K|B)?$/i);
+  if (!match) {
+    return raw || '-';
+  }
+
+  const amount = Number(match[1]);
+  const unit = (match[2] || 'B').toLowerCase();
+  const factors: Record<string, number> = {
+    b: 1,
+    k: 1000,
+    m: 1000 ** 2,
+    g: 1000 ** 3,
+    t: 1000 ** 4,
+    p: 1000 ** 5,
+    e: 1000 ** 6,
+    ki: 1024,
+    mi: 1024 ** 2,
+    gi: 1024 ** 3,
+    ti: 1024 ** 4,
+    pi: 1024 ** 5,
+    ei: 1024 ** 6,
+  };
+  const bytes = amount * factors[unit];
+
+  if (!Number.isFinite(bytes)) {
+    return raw;
+  }
+
+  const units = ['B', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei'];
+  let unitIndex = 0;
+  let displayValue = bytes;
+  while (displayValue >= 1024 && unitIndex < units.length - 1) {
+    displayValue /= 1024;
+    unitIndex += 1;
+  }
+
+  const precision = unitIndex === 0 ? 0 : 1;
+  return `${displayValue.toFixed(precision)} ${units[unitIndex]}`;
 }
 
 /** Returns resource metadata while giving callers a safe empty object fallback. */
@@ -146,6 +195,245 @@ export function workloadReady(resource: KubeResource): string {
   return `${ready}/${desired}`;
 }
 
+/** Formats a workload's updated and available pod counts as updated/available. */
+export function workloadPods(resource: KubeResource): string {
+  const updated = objectValue(resource.status, ['updatedReplicas']) ??
+    objectValue(resource.status, ['currentNumberScheduled']) ??
+    0;
+  const available = objectValue(resource.status, ['availableReplicas']) ??
+    objectValue(resource.status, ['numberAvailable']) ??
+    0;
+  return `${stringValue(updated, '0')}/${stringValue(available, '0')}`;
+}
+
+/** Returns the desired replica count for a workload from status or spec. */
+export function workloadReplicas(resource: KubeResource): string {
+  const replicas = objectValue(resource.status, ['replicas']) ??
+    objectValue(resource.spec, ['replicas']) ??
+    objectValue(resource.status, ['desiredNumberScheduled']) ??
+    0;
+  return stringValue(replicas, '0');
+}
+
+/** Returns the DaemonSet desired node count. */
+export function daemonsetDesired(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['desiredNumberScheduled']), '0');
+}
+
+/** Returns the DaemonSet current scheduled node count. */
+export function daemonsetCurrent(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['currentNumberScheduled']), '0');
+}
+
+/** Returns the DaemonSet ready node count. */
+export function daemonsetReady(resource: KubeResource): string {
+  return stringValue(
+    objectValue(resource.status, ['numberReady']) ??
+      objectValue(resource.status, ['readyReplicas']),
+    '0',
+  );
+}
+
+/** Returns the DaemonSet up-to-date node count. */
+export function daemonsetUpToDate(resource: KubeResource): string {
+  return stringValue(
+    objectValue(resource.status, ['updatedNumberScheduled']) ??
+      objectValue(resource.status, ['updatedReplicas']) ??
+      objectValue(resource.status, ['currentNumberScheduled']),
+    '0',
+  );
+}
+
+/** Returns the DaemonSet available node count. */
+export function daemonsetAvailable(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['numberAvailable']), '0');
+}
+
+/** Returns the desired ReplicaSet pod count from its spec. */
+export function replicasetDesired(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['replicas']), '0');
+}
+
+/** Returns the current ReplicaSet pod count from status. */
+export function replicasetCurrent(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['replicas']), '0');
+}
+
+/** Returns the ready ReplicaSet pod count from status. */
+export function replicasetReady(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['readyReplicas']), '0');
+}
+
+/** Maps Job status fields to a concise lifecycle label. */
+export function jobStatus(resource: KubeResource): string {
+  const conditions = objectValue(resource.status, ['conditions']);
+  if (Array.isArray(conditions)) {
+    const failed = conditions.some((condition) => {
+      const typed = condition as Record<string, unknown>;
+      return typed.type === 'Failed' && typed.status === 'True';
+    });
+    if (failed) return 'Failed';
+
+    const complete = conditions.some((condition) => {
+      const typed = condition as Record<string, unknown>;
+      return typed.type === 'Complete' && typed.status === 'True';
+    });
+    if (complete) return 'Complete';
+  }
+
+  if (Number(objectValue(resource.status, ['failed']) || 0) > 0) return 'Failed';
+  if (Number(objectValue(resource.status, ['succeeded']) || 0) > 0) return 'Complete';
+  return Number(objectValue(resource.status, ['active']) || 0) > 0 ? 'Running' : 'Pending';
+}
+
+/** Formats completed and desired Job pod counts as completed/desired. */
+export function jobCompletion(resource: KubeResource): string {
+  return `${stringValue(objectValue(resource.status, ['succeeded']), '0')}/${stringValue(objectValue(resource.spec, ['completions']), '1')}`;
+}
+
+/** Calculates Job runtime from start and completion timestamps. */
+export function jobDuration(resource: KubeResource): string {
+  const start = objectValue(resource.status, ['startTime']);
+  if (typeof start !== 'string') return '-';
+  const end = objectValue(resource.status, ['completionTime']);
+  const elapsed = (typeof end === 'string' ? Date.parse(end) : Date.now()) - Date.parse(start);
+  if (!Number.isFinite(elapsed) || elapsed < 0) return '-';
+  const seconds = Math.floor(elapsed / 1000);
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
+}
+
+/** Returns the Job start timestamp from Kubernetes status. */
+export function jobStartTime(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['startTime']));
+}
+
+/** Returns the Job completion timestamp from Kubernetes status. */
+export function jobEndTime(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['completionTime']));
+}
+
+/** Returns the number of ready Job pods. */
+export function jobReady(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['ready']), '0');
+}
+
+/** Returns the number of successfully completed Job pods. */
+export function jobSucceeded(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['succeeded']), '0');
+}
+
+/** Indicates whether Kubernetes has marked the Job for deletion. */
+export function jobTerminating(resource: KubeResource): string {
+  const deletionTimestamp = objectValue(
+    resource.metadata as Record<string, unknown> | undefined,
+    ['deletionTimestamp'],
+  );
+  return deletionTimestamp ? 'Yes' : 'No';
+}
+
+/** Returns a CronJob's configured cron schedule. */
+export function cronJobSchedule(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['schedule']));
+}
+
+/** Returns whether a CronJob is suspended. */
+export function cronJobSuspend(resource: KubeResource): string {
+  return objectValue(resource.spec, ['suspend']) === true ? 'Yes' : 'No';
+}
+
+/** Returns the number of currently active CronJob child Jobs. */
+export function cronJobActive(resource: KubeResource): string {
+  const active = objectValue(resource.status, ['active']);
+  return Array.isArray(active) ? String(active.length) : '0';
+}
+
+/** Returns the timestamp of the most recent CronJob schedule. */
+export function cronJobLastSchedule(resource: KubeResource): string {
+  return stringValue(objectValue(resource.status, ['lastScheduleTime']));
+}
+
+/** Returns the PersistentVolume storage class. */
+export function pvStorageClass(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['storageClassName']));
+}
+
+/** Returns the PersistentVolume storage capacity. */
+export function pvCapacity(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['capacity', 'storage']));
+}
+
+/** Returns the namespace/name claim reference attached to a PersistentVolume. */
+export function pvClaim(resource: KubeResource): string {
+  const claim = objectValue(resource.spec, ['claimRef']) as Record<string, unknown> | undefined;
+  if (!claim) return '-';
+  const namespace = stringValue(claim.namespace, '');
+  const name = stringValue(claim.name, '');
+  return namespace && name ? `${namespace}/${name}` : name || namespace || '-';
+}
+
+/** Maps PersistentVolume phase to Bound or Unbound. */
+export function pvStatus(resource: KubeResource): string {
+  return objectValue(resource.status, ['phase']) === 'Bound' ? 'Bound' : 'Unbound';
+}
+
+/** Returns a compact, 100-character maximum summary of resource labels. */
+export function labelsSummary(resource: KubeResource): string {
+  const labels = Object.entries(metadata(resource).labels || {})
+    .map(([key, value]) => `${key}=${value}`)
+    .join(', ');
+  return labels.slice(0, 100) || '-';
+}
+
+/** Returns a StorageClass provisioner. */
+export function storageClassProvisioner(resource: KubeResource): string {
+  return stringValue(
+    resource.provisioner ??
+      objectValue(resource.spec, ['provisioner']),
+  );
+}
+
+/** Returns a StorageClass reclaim policy with Kubernetes' default fallback. */
+export function storageClassReclaimPolicy(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['reclaimPolicy']), 'Delete');
+}
+
+/** Returns a StorageClass volume binding mode with Kubernetes' default fallback. */
+export function storageClassBindingMode(resource: KubeResource): string {
+  return stringValue(objectValue(resource.spec, ['volumeBindingMode']), 'Immediate');
+}
+
+/** Returns whether a StorageClass allows volume expansion. */
+export function storageClassExpansion(resource: KubeResource): string {
+  return objectValue(resource.spec, ['allowVolumeExpansion']) === true ? 'Yes' : 'No';
+}
+
+/** Returns the number of container statuses defined for a Pod. */
+export function podContainerCount(resource: KubeResource): string {
+  const containerStatuses = objectValue(resource.status, ['containerStatuses']);
+  return Array.isArray(containerStatuses) ? String(containerStatuses.length) : '0';
+}
+
+/** Returns the name of the first Kubernetes controller owner for a resource. */
+export function controlledBy(resource: KubeResource): string {
+  const ownerReferences = objectValue(
+    resource.metadata as Record<string, unknown> | undefined,
+    ['ownerReferences'],
+  );
+  if (!Array.isArray(ownerReferences)) {
+    return '-';
+  }
+
+  const owner = ownerReferences[0] as Record<string, unknown> | undefined;
+  return stringValue(owner?.name);
+}
+
 /** Interprets the node Ready condition and distinguishes Ready, NotReady, and unknown data. */
 export function nodePressure(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
@@ -165,6 +453,7 @@ export function nodePressure(resource: KubeResource): string {
 export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   if (kind === 'pods') return stringValue(objectValue(resource.status, ['phase']));
   if (kind === 'nodes') return nodePressure(resource);
+  if (kind === 'namespaces') return stringValue(objectValue(resource.status, ['phase']));
   if (kind === 'events') return resource.type || 'Normal';
   if (kind === 'pvcs') return stringValue(objectValue(resource.status, ['phase']));
   if (kind === 'secrets') return stringValue(resource.type);
@@ -195,9 +484,10 @@ export function columnsFor(kind: ResourceKind): Column[] {
     return [
       { label: 'Status', value: (resource) => statusFor(resource, kind) },
       { label: 'Roles', value: (resource) => Object.keys(metadata(resource).labels || {}).filter((label) => label.startsWith('node-role.kubernetes.io/')).map((label) => label.replace('node-role.kubernetes.io/', '')).join(', ') || 'worker' },
+      { label: 'Taints', value: (resource) => { const taints = objectValue(resource.spec, ['taints']); return Array.isArray(taints) ? String(taints.length) : '0'; } },
       { label: 'Version', value: (resource) => stringValue(objectValue(resource.status, ['nodeInfo', 'kubeletVersion'])) },
       { label: 'CPU', value: (resource) => stringValue(objectValue(resource.status, ['capacity', 'cpu'])) },
-      { label: 'Memory', value: (resource) => stringValue(objectValue(resource.status, ['capacity', 'memory'])) },
+      { label: 'Memory', value: (resource) => humanReadableMemory(objectValue(resource.status, ['allocatable', 'memory']) || objectValue(resource.status, ['capacity', 'memory'])) },
       { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
     ];
   }
@@ -205,19 +495,93 @@ export function columnsFor(kind: ResourceKind): Column[] {
   if (kind === 'pods') {
     return [
       ...common,
-      { label: 'Ready', value: podReady },
+      { label: 'Containers', value: podContainerCount },
       { label: 'Status', value: (resource) => statusFor(resource, kind) },
       { label: 'Restarts', value: (resource) => { const statuses = objectValue(resource.status, ['containerStatuses']); if (!Array.isArray(statuses)) return '0'; return String(statuses.reduce((total, status) => total + Number((status as Record<string, unknown>).restartCount || 0), 0)); } },
       { label: 'Node', value: (resource) => stringValue(objectValue(resource.spec, ['nodeName'])) },
+      { label: 'Controlled By', value: controlledBy },
     ];
   }
 
-  if (['deployments', 'daemonsets', 'statefulsets'].includes(kind)) {
+  if (kind === 'daemonsets') {
     return [
-      ...common,
-      { label: 'Ready', value: (resource) => statusFor(resource, kind) },
-      { label: 'Up To Date', value: (resource) => stringValue(objectValue(resource.status, ['updatedReplicas']) || objectValue(resource.status, ['currentNumberScheduled']), '0') },
-      { label: 'Available', value: (resource) => stringValue(objectValue(resource.status, ['availableReplicas']) || objectValue(resource.status, ['numberAvailable']), '0') },
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Desired', value: daemonsetDesired },
+      { label: 'Current', value: daemonsetCurrent },
+      { label: 'Ready', value: daemonsetReady },
+      { label: 'Up-to-Date', value: daemonsetUpToDate },
+      { label: 'Available', value: daemonsetAvailable },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'replicasets') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Desired', value: replicasetDesired },
+      { label: 'Current', value: replicasetCurrent },
+      { label: 'Ready', value: replicasetReady },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'jobs') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Start Time', value: jobStartTime },
+      { label: 'End Time', value: jobEndTime },
+      { label: 'Ready', value: jobReady },
+      { label: 'Succeded', value: jobSucceeded },
+      { label: 'Terminating', value: jobTerminating },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'cronjobs') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Schedule', value: cronJobSchedule },
+      { label: 'Suspend', value: cronJobSuspend },
+      { label: 'Active', value: cronJobActive },
+      { label: 'Last Schedule', value: cronJobLastSchedule },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'pvs') {
+    return [
+      { label: 'Storage Class', value: pvStorageClass },
+      { label: 'Capacity', value: pvCapacity },
+      { label: 'Claim', value: pvClaim },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+      { label: 'Status', value: pvStatus },
+    ];
+  }
+
+  if (kind === 'namespaces') {
+    return [
+      { label: 'Status', value: (resource) => statusFor(resource, kind) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+      { label: 'Labels', value: labelsSummary },
+    ];
+  }
+
+  if (kind === 'storageclasses') {
+    return [
+      { label: 'Provisioner', value: storageClassProvisioner },
+      { label: 'Reclaim Policy', value: storageClassReclaimPolicy },
+      { label: 'Volume Binding Mode', value: storageClassBindingMode },
+      { label: 'Allow Volume Expansion', value: storageClassExpansion },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (['deployments', 'statefulsets'].includes(kind)) {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Pods', value: workloadPods },
+      { label: 'Replicas', value: workloadReplicas },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
     ];
   }
 
@@ -294,6 +658,7 @@ export function highlightYaml(yaml: string): string {
 
 /** Reads one resource collection from a snapshot and returns an empty list for missing data. */
 export function getResources(snapshot: Snapshot, kind: ResourceKind): KubeResource[] {
+  if (kind === 'namespaces') return snapshot.namespaces;
   return snapshot.resources[kind] || [];
 }
 

@@ -65,15 +65,21 @@ const resolveDefaultKubeconfigPath = async (): Promise<string> => {
 
 const resourceMap = {
   nodes: 'nodes',
+  namespaces: 'namespaces',
   pods: 'pods',
   deployments: 'deployments',
   daemonsets: 'daemonsets',
   statefulsets: 'statefulsets',
+  replicasets: 'replicasets',
+  jobs: 'jobs',
+  cronjobs: 'cronjobs',
   services: 'services',
   ingresses: 'ingresses',
   configmaps: 'configmaps',
   secrets: 'secrets',
   pvcs: 'persistentvolumeclaims',
+  pvs: 'persistentvolumes',
+  storageclasses: 'storageclasses',
   events: 'events',
 } as const;
 
@@ -267,6 +273,8 @@ const createKubeConfig = (context: KubeContext): k8s.KubeConfig => {
 type KubernetesClients = {
   core: k8s.CoreV1Api;
   apps: k8s.AppsV1Api;
+  batch: k8s.BatchV1Api;
+  storage: k8s.StorageV1Api;
   networking: k8s.NetworkingV1Api;
 };
 
@@ -276,6 +284,8 @@ const createClients = (context: KubeContext): KubernetesClients => {
   return {
     core: kubeConfig.makeApiClient(k8s.CoreV1Api),
     apps: kubeConfig.makeApiClient(k8s.AppsV1Api),
+    batch: kubeConfig.makeApiClient(k8s.BatchV1Api),
+    storage: kubeConfig.makeApiClient(k8s.StorageV1Api),
     networking: kubeConfig.makeApiClient(k8s.NetworkingV1Api),
   };
 };
@@ -308,6 +318,9 @@ const readResources = async (
     case 'nodes':
       return responseValue(await clients.core.listNode({}));
 
+    case 'namespaces':
+      return responseValue(await clients.core.listNamespace({}));
+
     case 'pods':
       return allNamespaces
         ? responseValue(await clients.core.listPodForAllNamespaces({}))
@@ -327,6 +340,21 @@ const readResources = async (
       return allNamespaces
         ? responseValue(await clients.apps.listStatefulSetForAllNamespaces({}))
         : responseValue(await clients.apps.listNamespacedStatefulSet({ namespace }));
+
+    case 'replicasets':
+      return allNamespaces
+        ? responseValue(await clients.apps.listReplicaSetForAllNamespaces({}))
+        : responseValue(await clients.apps.listNamespacedReplicaSet({ namespace }));
+
+    case 'jobs':
+      return allNamespaces
+        ? responseValue(await clients.batch.listJobForAllNamespaces({}))
+        : responseValue(await clients.batch.listNamespacedJob({ namespace }));
+
+    case 'cronjobs':
+      return allNamespaces
+        ? responseValue(await clients.batch.listCronJobForAllNamespaces({}))
+        : responseValue(await clients.batch.listNamespacedCronJob({ namespace }));
 
     case 'services':
       return allNamespaces
@@ -355,6 +383,12 @@ const readResources = async (
             await clients.core.listNamespacedPersistentVolumeClaim({ namespace }),
           );
 
+    case 'pvs':
+      return responseValue(await clients.core.listPersistentVolume({}));
+
+    case 'storageclasses':
+      return responseValue(await clients.storage.listStorageClass({}));
+
     case 'events':
       return allNamespaces
         ? responseValue(await clients.core.listEventForAllNamespaces({}))
@@ -371,6 +405,9 @@ const readResource = async (
   switch (kind) {
     case 'nodes':
       return responseValue(await clients.core.readNode({ name }));
+
+    case 'namespaces':
+      return responseValue(await clients.core.readNamespace({ name }));
 
     case 'pods':
       return responseValue(
@@ -390,6 +427,27 @@ const readResource = async (
     case 'statefulsets':
       return responseValue(
         await clients.apps.readNamespacedStatefulSet({ name, namespace }),
+      );
+
+    case 'replicasets':
+      return responseValue(
+        await clients.apps.readNamespacedReplicaSet({ name, namespace }),
+      );
+
+    case 'jobs':
+      return responseValue(
+        await clients.batch.readNamespacedJob({ name, namespace }),
+      );
+
+    case 'pvs':
+      return responseValue(await clients.core.readPersistentVolume({ name }));
+
+    case 'storageclasses':
+      return responseValue(await clients.storage.readStorageClass({ name }));
+
+    case 'cronjobs':
+      return responseValue(
+        await clients.batch.readNamespacedCronJob({ name, namespace }),
       );
 
     case 'services':
@@ -494,7 +552,9 @@ const registerKubernetesHandlers = () => {
         }
 
         const clients = createClients(selectedContext);
-        const kinds = Object.keys(resourceMap) as ResourceKind[];
+        const kinds = (Object.keys(resourceMap) as ResourceKind[]).filter(
+          (kind) => !['namespaces', 'replicasets', 'jobs', 'cronjobs', 'pvs', 'storageclasses'].includes(kind),
+        );
 
         const [namespaces, ...lists] = await Promise.all([
           responseValue(await clients.core.listNamespace({})),
@@ -538,6 +598,27 @@ const registerKubernetesHandlers = () => {
           resources,
         };
       }
+    },
+  );
+
+  ipcMain.handle(
+    'cluster:getResources',
+    async (_event, kind: ResourceKind, namespace = 'all', contextId = '') => {
+      if (!resourceMap[kind]) {
+        throw new Error(`Unsupported Kubernetes resource kind: ${kind}`);
+      }
+
+      const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
+      const { selectedContext } = await resolveSelectedContext(contextId);
+      if (!selectedContext) {
+        throw new Error(
+          `No kubeconfig contexts found in ${resolvedKubeconfigPath}.`,
+        );
+      }
+
+      const clients = createClients(selectedContext);
+      const response = await readResources(kind, namespace, clients);
+      return response.items || [];
     },
   );
 

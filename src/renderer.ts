@@ -3,10 +3,10 @@ import YAML from 'yaml';
 import * as dataplane from './dataplane';
 import type {
   AboutInfo,
+  CliToolsAvailability,
   ClusterContext,
   Column,
   Density,
-  KubectlAvailability,
   KubectlResult,
   KubeResource,
   Metadata,
@@ -19,10 +19,10 @@ import type {
 } from './app.types';
 export type {
   AboutInfo,
+  CliToolsAvailability,
   ClusterContext,
   Column,
   Density,
-  KubectlAvailability,
   KubectlResult,
   KubeApi,
   KubeResource,
@@ -53,7 +53,7 @@ const state = {
   kubectlError: '',
   kubectlRunning: false,
   kubectlRequestId: 0,
-  kubectlAvailability: null as KubectlAvailability | null,
+  cliToolsAvailability: null as CliToolsAvailability | null,
   kubectlAvailabilityMessage: 'Checking whether kubectl is available...',
   outputExpanded: false,
   namespace: 'all',
@@ -695,16 +695,26 @@ function render() {
       : state.snapshot.context === 'No Kubernetes context'
         ? 'No cluster connected'
         : `Cluster: ${state.snapshot.context}`;
-  const kubectlStatus = state.kubectlAvailability === null
-    ? 'Checking kubectl'
-    : state.kubectlAvailability.available
-      ? 'kubectl detected'
-      : 'kubectl not detected';
-  const kubectlStatusTone = state.kubectlAvailability === null
-    ? 'checking'
-    : state.kubectlAvailability.available
-      ? 'available'
-      : 'unavailable';
+  const cliTools = (['kubectl', 'docker', 'kind'] as const).map((tool) => {
+    const availability = state.cliToolsAvailability?.[tool];
+    const tooltip = !availability
+      ? 'Checking availability'
+      : availability.available
+        ? 'Detected'
+        : 'Not detected';
+    const accessibleLabel = !availability
+      ? `Checking ${tool} availability`
+      : availability.available
+        ? `${tool} detected`
+        : `${tool} not detected`;
+    const tone = !availability
+      ? 'checking'
+      : availability.available
+        ? 'available'
+        : 'unavailable';
+
+    return `<div class="cli-detection ${tool}-detection ${tone}" data-tooltip="${tooltip}" aria-label="${escapeHtml(accessibleLabel)}" tabindex="0"><span class="cli-detection-indicator"></span><span>${tool}</span></div>`;
+  });
 
   const groupedNav = navItems.reduce<Record<string, NavItem[]>>((acc, item) => {
     if (!acc[item.group]) {
@@ -899,10 +909,7 @@ function render() {
           <span class="connection-indicator"></span>
           <span>${escapeHtml(clusterStatus)}</span>
         </div>
-        <div class="kubectl-detection ${kubectlStatusTone}">
-          <span class="kubectl-detection-indicator"></span>
-          <span>${escapeHtml(kubectlStatus)}</span>
-        </div>
+        <div class="cli-detection-list" aria-label="CLI availability">${cliTools.join('')}</div>
       </footer>
     </div>
   `;
@@ -999,7 +1006,7 @@ function renderSummary(): string {
 
 /** Renders the context-bound command prompt and its syntax-highlighted output. */
 function renderKubectlTerminal(): string {
-  const kubectlDisabled = state.kubectlAvailability?.available !== true;
+  const kubectlDisabled = state.cliToolsAvailability?.kubectl.available !== true;
   const selectedContext = state.contexts.find(
     (context) => context.id === state.selectedContextId,
   );
@@ -1073,7 +1080,7 @@ function renderKubectlTerminal(): string {
         ? `<div class="kubectl-disabled-overlay" role="status" aria-live="polite">
             <div class="kubectl-disabled-message">
               <i data-lucide="terminal" aria-hidden="true"></i>
-              <h2>${state.kubectlAvailability ? 'Terminal unavailable' : 'Checking kubectl'}</h2>
+              <h2>${state.cliToolsAvailability ? 'Terminal unavailable' : 'Checking kubectl'}</h2>
               <p>${escapeHtml(state.kubectlAvailabilityMessage)}</p>
             </div>
           </div>`
@@ -1558,20 +1565,25 @@ function bindEvents() {
   });
 }
 
-/** Checks whether kubectl is available before enabling the Dashboard terminal. */
-async function checkKubectlAvailability(): Promise<void> {
+/** Checks local CLI availability before enabling the Dashboard terminal. */
+async function checkCliToolsAvailability(): Promise<void> {
   try {
-    if (!window.kubeApi?.checkKubectl) {
-      throw new Error('The kubectl availability check is unavailable.');
+    if (!window.kubeApi?.checkCliTools) {
+      throw new Error('The CLI availability check is unavailable.');
     }
 
-    state.kubectlAvailability = await window.kubeApi.checkKubectl();
-    state.kubectlAvailabilityMessage = state.kubectlAvailability.message;
+    state.cliToolsAvailability = await window.kubeApi.checkCliTools();
+    state.kubectlAvailabilityMessage = state.cliToolsAvailability.kubectl.message;
   } catch (error) {
-    state.kubectlAvailability = { available: false, message: '' };
-    state.kubectlAvailabilityMessage = error instanceof Error
+    const message = error instanceof Error
       ? error.message
-      : 'Unable to check kubectl availability.';
+      : 'Unable to check CLI availability.';
+    state.cliToolsAvailability = {
+      kubectl: { available: false, message },
+      docker: { available: false, message },
+      kind: { available: false, message },
+    };
+    state.kubectlAvailabilityMessage = message;
   }
 
   render();
@@ -2066,6 +2078,6 @@ void (async () => {
   window.appInfo?.onShowAbout(() => {
     void openAbout();
   });
-  await Promise.all([loadContexts(), checkKubectlAvailability()]);
+  await Promise.all([loadContexts(), checkCliToolsAvailability()]);
   await loadSnapshot();
 })();

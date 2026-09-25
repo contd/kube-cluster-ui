@@ -163,7 +163,11 @@
       contexts,
       selectedContextId,
     }),
-    checkKubectl: async () => ({ available: true, message: '' }),
+    checkCliTools: async () => ({
+      kubectl: { available: true, message: '' },
+      docker: { available: true, message: '' },
+      kind: { available: true, message: '' },
+    }),
     runKubectl: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
   };
 

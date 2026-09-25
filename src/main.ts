@@ -514,11 +514,15 @@ const executeKubectl = (args: string[]) => {
   });
 };
 
-const checkKubectlAvailability = (): Promise<{ available: boolean; message: string }> => {
+const checkCommandAvailability = (
+  command: string,
+  args: string[],
+  label: string,
+): Promise<{ available: boolean; message: string }> => {
   return new Promise((resolve) => {
     execFile(
-      'kubectl',
-      ['version', '--client'],
+      command,
+      args,
       { encoding: 'utf8', timeout: 10_000, windowsHide: true },
       (error) => {
         if (!error || typeof error.code === 'number') {
@@ -529,16 +533,26 @@ const checkKubectlAvailability = (): Promise<{ available: boolean; message: stri
         resolve({
           available: false,
           message: error.killed
-            ? 'The kubectl availability check timed out.'
-            : 'kubectl is not available on PATH. Install kubectl and restart the app.',
+            ? `The ${label} availability check timed out.`
+            : `${label} is not available on PATH. Install it and restart the app.`,
         });
       },
     );
   });
 };
 
+const checkCliToolsAvailability = async () => {
+  const [kubectl, docker, kind] = await Promise.all([
+    checkCommandAvailability('kubectl', ['version', '--client'], 'kubectl'),
+    checkCommandAvailability('docker', ['--version'], 'Docker'),
+    checkCommandAvailability('kind', ['version'], 'kind'),
+  ]);
+
+  return { kubectl, docker, kind };
+};
+
 const registerKubernetesHandlers = () => {
-  ipcMain.handle('cluster:checkKubectl', checkKubectlAvailability);
+  ipcMain.handle('cluster:checkCliTools', checkCliToolsAvailability);
 
   ipcMain.handle('cluster:getContexts', async () => {
     const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();

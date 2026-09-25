@@ -31,7 +31,7 @@ Download the newest packaged releases from GitHub:
 
 Each entry documents a view covered by a Playwright test. When adding a navigation view, add its test, numbered snapshot, and feature note here.
 
-- **Dashboard:** Cluster health summary cards and the context-bound command terminal. <br><img src="docs/snapshots/01-dashboard.png" alt="Dashboard view" width="640">
+- **Dashboard:** Cluster health summary cards, a context-bound command terminal, and kubectl, Docker, and kind availability indicators. <br><img src="docs/snapshots/01-dashboard.png" alt="Dashboard view" width="640">
 - **Nodes:** Node readiness, roles, taints, version, CPU, memory, and age. <br><img src="docs/snapshots/02-nodes.png" alt="Nodes view" width="640">
 - **Namespaces:** Namespace status, age, and label summary. <br><img src="docs/snapshots/03-namespaces.png" alt="Namespaces view" width="640">
 - **Pods:** Container count, phase, restarts, node placement, and controller. <br><img src="docs/snapshots/04-pods.png" alt="Pods view" width="640">

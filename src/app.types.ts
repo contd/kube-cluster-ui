@@ -81,10 +81,17 @@ export type KubectlResult = {
   exitCode: number;
 };
 
-/** Availability status for the local kubectl executable. */
-export type KubectlAvailability = {
+/** Availability status for one local command-line tool. */
+export type CliAvailability = {
   available: boolean;
   message: string;
+};
+
+/** Startup availability results for the command-line tools shown in the status bar. */
+export type CliToolsAvailability = {
+  kubectl: CliAvailability;
+  docker: CliAvailability;
+  kind: CliAvailability;
 };
 
 /** A selectable kubeconfig context together with the file and cluster identity it represents. */
@@ -177,8 +184,8 @@ export type KubeApi = {
   /** Runs a kubectl command without a shell and binds it to the selected context. */
   runKubectl: (command: string, contextId?: string) => Promise<KubectlResult>;
 
-  /** Checks whether kubectl can be launched on the local system. */
-  checkKubectl: () => Promise<KubectlAvailability>;
+  /** Checks whether kubectl, Docker, and kind can be launched locally. */
+  checkCliTools: () => Promise<CliToolsAvailability>;
 };
 
 /** Presentation metadata for one grouped sidebar entry, including Dashboard or a resource view. */

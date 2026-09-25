@@ -172,7 +172,7 @@ button {
 }
 
 .connection-indicator,
-.kubectl-detection-indicator {
+.cli-detection-indicator {
   display: inline-block;
   width: 8px;
   height: 8px;
@@ -193,27 +193,65 @@ button {
 }
 
 .cluster-status,
-.kubectl-detection {
+.cli-detection {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 7px;
   min-width: 0;
+  cursor: help;
   white-space: nowrap;
 }
 
-.kubectl-detection {
+.cli-detection:focus-visible {
+  outline: 1px solid #9fb1ba;
+  outline-offset: 2px;
+}
+
+.cli-detection::after {
+  position: absolute;
+  z-index: 5;
+  right: 50%;
+  bottom: calc(100% + 8px);
+  padding: 5px 8px;
+  transform: translate(50%, 3px);
+  border: 1px solid #40545e;
+  border-radius: 4px;
+  background: #172027;
+  color: #f1f6f8;
+  content: attr(data-tooltip);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 100ms ease, transform 100ms ease;
+  visibility: hidden;
+  white-space: nowrap;
+}
+
+.cli-detection:hover::after,
+.cli-detection:focus-visible::after {
+  transform: translate(50%, 0);
+  opacity: 1;
+  visibility: visible;
+}
+
+.cli-detection-list {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   margin-left: auto;
 }
 
-.kubectl-detection-indicator {
+.cli-detection-indicator {
   background: #f3ba4d;
 }
 
-.kubectl-detection.available .kubectl-detection-indicator {
+.cli-detection.available .cli-detection-indicator {
   background: #4fc08d;
 }
 
-.kubectl-detection.unavailable .kubectl-detection-indicator {
+.cli-detection.unavailable .cli-detection-indicator {
   background: #df6d61;
 }
 
@@ -954,7 +992,7 @@ h1 {
 }
 
 [data-density="compact"] .connection-indicator,
-[data-density="compact"] .kubectl-detection-indicator {
+[data-density="compact"] .cli-detection-indicator {
   width: 5px;
   height: 5px;
 }

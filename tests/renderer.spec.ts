@@ -48,6 +48,17 @@ async function openNavigationItem(page: Page, kind: string): Promise<void> {
   await item.click();
 }
 
+async function expectCliTooltip(page: Page, selector: string, text: string): Promise<void> {
+  const tool = page.locator(selector);
+  await tool.hover();
+  await expect.poll(() => tool.evaluate((element) => {
+    return getComputedStyle(element, '::after').content;
+  })).toBe(`"${text}"`);
+  await expect.poll(() => tool.evaluate((element) => {
+    return getComputedStyle(element, '::after').visibility;
+  })).toBe('visible');
+}
+
 // These end-to-end tests use a deterministic live-cluster preload mock so they
 // do not require kubectl, a kubeconfig, or a real cluster.
 test.describe('Kube Cluster UI views', () => {
@@ -57,7 +68,12 @@ test.describe('Kube Cluster UI views', () => {
     await page.addInitScript({ path: 'tests/kube-api-mock.js' });
     await page.goto('/');
     await expect(page.locator('.cluster-status')).toHaveText('Connected to test-cluster');
-    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl detected');
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
+    await expect(page.locator('.docker-detection')).toHaveText('docker');
+    await expect(page.locator('.kind-detection')).toHaveText('kind');
+    await expect(page.locator('.kubectl-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(79, 192, 141)');
+    await expect(page.locator('.docker-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(79, 192, 141)');
+    await expect(page.locator('.kind-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(79, 192, 141)');
     await expect(page.locator('.banner')).toHaveCount(0);
   });
 
@@ -92,12 +108,22 @@ test.describe('Kube Cluster UI views', () => {
     await page.screenshot({ path: 'docs/snapshots/01-dashboard.png', fullPage: true });
   });
 
+  test('shows CLI availability in hover tooltips', async ({ page }) => {
+    await expectCliTooltip(page, '.kubectl-detection', 'Detected');
+    await expectCliTooltip(page, '.docker-detection', 'Detected');
+    await expectCliTooltip(page, '.kind-detection', 'Detected');
+  });
+
   test('disables and dims the terminal when kubectl is unavailable', async ({ page }) => {
     await page.addInitScript(() => {
       if (window.kubeApi) {
-        window.kubeApi.checkKubectl = async () => ({
-          available: false,
-          message: 'kubectl is not available on PATH. Install kubectl and restart the app.',
+        window.kubeApi.checkCliTools = async () => ({
+          kubectl: {
+            available: false,
+            message: 'kubectl is not available on PATH. Install kubectl and restart the app.',
+          },
+          docker: { available: true, message: '' },
+          kind: { available: false, message: 'kind is not available on PATH.' },
         });
       }
     });
@@ -108,11 +134,44 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('.kubectl-disabled-message')).toContainText(
       'kubectl is not available on PATH. Install kubectl and restart the app.',
     );
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
+    await expect(page.locator('.docker-detection')).toHaveText('docker');
+    await expect(page.locator('.kind-detection')).toHaveText('kind');
+    await expectCliTooltip(page, '.kubectl-detection', 'Not detected');
+    await expectCliTooltip(page, '.docker-detection', 'Detected');
+    await expectCliTooltip(page, '.kind-detection', 'Not detected');
+    await expect(page.locator('.kubectl-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(223, 109, 97)');
+    await expect(page.locator('.docker-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(79, 192, 141)');
+    await expect(page.locator('.kind-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(223, 109, 97)');
     await expect(page.locator('#kubectl-command')).toBeDisabled();
     await expect(page.locator('#kubectl-run')).toBeDisabled();
     await expect(page.locator('#kubectl-output-toggle')).toBeDisabled();
     await expect(page.locator('#kubectl-clear-history')).toBeDisabled();
     await page.screenshot({ path: 'docs/snapshots/19-kubectl-unavailable.png', fullPage: true });
+  });
+
+  test('marks Docker and kind unavailable without disabling the terminal', async ({ page }) => {
+    await page.addInitScript(() => {
+      if (window.kubeApi) {
+        window.kubeApi.checkCliTools = async () => ({
+          kubectl: { available: true, message: '' },
+          docker: { available: false, message: 'Docker is not available on PATH.' },
+          kind: { available: false, message: 'kind is not available on PATH.' },
+        });
+      }
+    });
+    await page.reload();
+
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
+    await expect(page.locator('.docker-detection')).toHaveText('docker');
+    await expect(page.locator('.kind-detection')).toHaveText('kind');
+    await expectCliTooltip(page, '.kubectl-detection', 'Detected');
+    await expectCliTooltip(page, '.docker-detection', 'Not detected');
+    await expectCliTooltip(page, '.kind-detection', 'Not detected');
+    await expect(page.locator('.docker-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(223, 109, 97)');
+    await expect(page.locator('.kind-detection .cli-detection-indicator')).toHaveCSS('background-color', 'rgb(223, 109, 97)');
+    await expect(page.locator('.dashboard-terminal-grid')).not.toHaveClass(/kubectl-disabled/);
+    await expect(page.locator('#kubectl-command')).toBeEnabled();
   });
 
   test('runs kubectl with the selected context and highlights its output', async ({ page }) => {
@@ -170,7 +229,11 @@ test.describe('Kube Cluster UI views', () => {
           ],
           selectedContextId: 'test-config::dev',
         }),
-        checkKubectl: async () => ({ available: true, message: '' }),
+        checkCliTools: async () => ({
+          kubectl: { available: true, message: '' },
+          docker: { available: true, message: '' },
+          kind: { available: true, message: '' },
+        }),
         getSnapshot: async (_namespace, contextId) => ({
           context: contextId === 'test-config::prod' ? 'prod' : 'dev',
           mode: 'live' as const,
@@ -191,7 +254,9 @@ test.describe('Kube Cluster UI views', () => {
     });
     await page.reload();
     await expect(page.locator('.cluster-status')).toHaveText('Connected to dev');
-    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl detected');
+    await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
+    await expect(page.locator('.docker-detection')).toHaveText('docker');
+    await expect(page.locator('.kind-detection')).toHaveText('kind');
     await expect(page.locator('.dashboard-terminal-grid')).toBeVisible();
     await expect(page.locator('.dashboard-terminal-grid')).toHaveCSS(
       'grid-template-columns',

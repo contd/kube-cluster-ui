@@ -37,7 +37,7 @@ contextBridge.exposeInMainWorld('kubeApi', {
   ) => ipcRenderer.invoke('cluster:getResource', kind, namespace, name, contextId),
   runKubectl: (command: string, contextId: string) =>
     ipcRenderer.invoke('cluster:runKubectl', command, contextId),
-  checkKubectl: () => ipcRenderer.invoke('cluster:checkKubectl'),
+  checkCliTools: () => ipcRenderer.invoke('cluster:checkCliTools'),
 });
 
 contextBridge.exposeInMainWorld('darkMode', {

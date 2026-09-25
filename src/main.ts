@@ -83,6 +83,11 @@ const resourceMap = {
   pvcs: 'persistentvolumeclaims',
   pvs: 'persistentvolumes',
   storageclasses: 'storageclasses',
+  serviceaccounts: 'serviceaccounts',
+  clusterroles: 'clusterroles',
+  roles: 'roles',
+  clusterrolebindings: 'clusterrolebindings',
+  rolebindings: 'rolebindings',
   events: 'events',
 } as const;
 
@@ -120,7 +125,24 @@ const namespacedResources = new Set<ResourceKind>([
   'configmaps',
   'secrets',
   'pvcs',
+  'serviceaccounts',
+  'roles',
+  'rolebindings',
   'events',
+]);
+
+const resourcesLoadedOnDemand = new Set<ResourceKind>([
+  'namespaces',
+  'replicasets',
+  'jobs',
+  'cronjobs',
+  'pvs',
+  'storageclasses',
+  'serviceaccounts',
+  'clusterroles',
+  'roles',
+  'clusterrolebindings',
+  'rolebindings',
 ]);
 
 const settingsPath = () => path.join(app.getPath('userData'), settingsFileName);
@@ -279,6 +301,7 @@ type KubernetesClients = {
   batch: k8s.BatchV1Api;
   storage: k8s.StorageV1Api;
   networking: k8s.NetworkingV1Api;
+  rbac: k8s.RbacAuthorizationV1Api;
 };
 
 const createClients = (context: KubeContext): KubernetesClients => {
@@ -290,6 +313,7 @@ const createClients = (context: KubeContext): KubernetesClients => {
     batch: kubeConfig.makeApiClient(k8s.BatchV1Api),
     storage: kubeConfig.makeApiClient(k8s.StorageV1Api),
     networking: kubeConfig.makeApiClient(k8s.NetworkingV1Api),
+    rbac: kubeConfig.makeApiClient(k8s.RbacAuthorizationV1Api),
   };
 };
 
@@ -379,6 +403,11 @@ const readResources = async (
         ? responseValue(await clients.core.listSecretForAllNamespaces({}))
         : responseValue(await clients.core.listNamespacedSecret({ namespace }));
 
+    case 'serviceaccounts':
+      return allNamespaces
+        ? responseValue(await clients.core.listServiceAccountForAllNamespaces({}))
+        : responseValue(await clients.core.listNamespacedServiceAccount({ namespace }));
+
     case 'pvcs':
       return allNamespaces
         ? responseValue(await clients.core.listPersistentVolumeClaimForAllNamespaces({}))
@@ -391,6 +420,22 @@ const readResources = async (
 
     case 'storageclasses':
       return responseValue(await clients.storage.listStorageClass({}));
+
+    case 'clusterroles':
+      return responseValue(await clients.rbac.listClusterRole({}));
+
+    case 'roles':
+      return allNamespaces
+        ? responseValue(await clients.rbac.listRoleForAllNamespaces({}))
+        : responseValue(await clients.rbac.listNamespacedRole({ namespace }));
+
+    case 'clusterrolebindings':
+      return responseValue(await clients.rbac.listClusterRoleBinding({}));
+
+    case 'rolebindings':
+      return allNamespaces
+        ? responseValue(await clients.rbac.listRoleBindingForAllNamespaces({}))
+        : responseValue(await clients.rbac.listNamespacedRoleBinding({ namespace }));
 
     case 'events':
       return allNamespaces
@@ -448,6 +493,18 @@ const readResource = async (
     case 'storageclasses':
       return responseValue(await clients.storage.readStorageClass({ name }));
 
+    case 'clusterroles':
+      return responseValue(await clients.rbac.readClusterRole({ name }));
+
+    case 'clusterrolebindings':
+      return responseValue(await clients.rbac.readClusterRoleBinding({ name }));
+
+    case 'roles':
+      return responseValue(await clients.rbac.readNamespacedRole({ name, namespace }));
+
+    case 'rolebindings':
+      return responseValue(await clients.rbac.readNamespacedRoleBinding({ name, namespace }));
+
     case 'cronjobs':
       return responseValue(
         await clients.batch.readNamespacedCronJob({ name, namespace }),
@@ -471,6 +528,11 @@ const readResource = async (
     case 'secrets':
       return responseValue(
         await clients.core.readNamespacedSecret({ name, namespace }),
+      );
+
+    case 'serviceaccounts':
+      return responseValue(
+        await clients.core.readNamespacedServiceAccount({ name, namespace }),
       );
 
     case 'pvcs':
@@ -621,7 +683,7 @@ const registerKubernetesHandlers = () => {
 
         const clients = createClients(selectedContext);
         const kinds = (Object.keys(resourceMap) as ResourceKind[]).filter(
-          (kind) => !['namespaces', 'replicasets', 'jobs', 'cronjobs', 'pvs', 'storageclasses'].includes(kind),
+          (kind) => !resourcesLoadedOnDemand.has(kind),
         );
 
         const [namespaces, ...lists] = await Promise.all([

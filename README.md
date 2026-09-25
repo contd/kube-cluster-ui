@@ -50,6 +50,16 @@ Each entry documents a view covered by a Playwright test. When adding a navigati
 - **Persistent Volume Claims:** Claim status, capacity, and storage class. <br><img src="docs/snapshots/17-pvcs.png" alt="Persistent Volume Claims view" width="640">
 - **Events:** Event type, reason, involved object, count, and last-seen time. <br><img src="docs/snapshots/18-events.png" alt="Events view" width="640">
 - **Unavailable terminal:** The terminal is dimmed and disabled when kubectl is missing. <br><img src="docs/snapshots/19-kubectl-unavailable.png" alt="Dashboard terminal disabled because kubectl is unavailable" width="640">
+- **Service Accounts:** Namespace-scoped service accounts and secret references. <br><img src="docs/snapshots/20-serviceaccounts.png" alt="Service Accounts view" width="640">
+- **Cluster Roles:** Cluster-wide RBAC roles and rule counts. <br><img src="docs/snapshots/21-clusterroles.png" alt="Cluster Roles view" width="640">
+- **Roles:** Namespace-scoped RBAC roles and rule counts. <br><img src="docs/snapshots/22-roles.png" alt="Roles view" width="640">
+- **Cluster Role Bindings:** Cluster-wide role references and subject counts. <br><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings view" width="640">
+- **Role Bindings:** Namespace-scoped role references and subject counts. <br><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings view" width="640">
+- **Service Accounts:** Namespace-scoped service accounts and secret references. <br><img src="docs/snapshots/20-serviceaccounts.png" alt="Service Accounts view" width="640">
+- **Cluster Roles:** Cluster-wide RBAC roles and rule counts. <br><img src="docs/snapshots/21-clusterroles.png" alt="Cluster Roles view" width="640">
+- **Roles:** Namespace-scoped RBAC roles and rule counts. <br><img src="docs/snapshots/22-roles.png" alt="Roles view" width="640">
+- **Cluster Role Bindings:** Cluster-wide role references and subject counts. <br><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings view" width="640">
+- **Role Bindings:** Namespace-scoped role references and subject counts. <br><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings view" width="640">
 
 ---
 

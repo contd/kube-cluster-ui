@@ -109,6 +109,23 @@
     ingresses: [resource('Ingress', 'test-ingress', {
       spec: { ingressClassName: 'nginx', rules: [{ host: 'test.local' }] },
     })],
+    serviceaccounts: [resource('ServiceAccount', 'test-serviceaccount', {
+      secrets: [{ name: 'test-serviceaccount-token' }],
+    })],
+    clusterroles: [resource('ClusterRole', 'test-cluster-role', {
+      rules: [{ apiGroups: [''], resources: ['pods'], verbs: ['get', 'list'] }],
+    }, '')],
+    roles: [resource('Role', 'test-role', {
+      rules: [{ apiGroups: [''], resources: ['configmaps'], verbs: ['get'] }],
+    })],
+    clusterrolebindings: [resource('ClusterRoleBinding', 'test-cluster-role-binding', {
+      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'view' },
+      subjects: [{ kind: 'ServiceAccount', name: 'test-serviceaccount', namespace: 'default' }],
+    }, '')],
+    rolebindings: [resource('RoleBinding', 'test-role-binding', {
+      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: 'test-role' },
+      subjects: [{ kind: 'ServiceAccount', name: 'test-serviceaccount', namespace: 'default' }],
+    })],
     configmaps: [resource('ConfigMap', 'test-configmap', { data: { 'app.conf': 'enabled=true' } })],
     secrets: [resource('Secret', 'test-secret', { type: 'Opaque', data: { token: 'masked' } })],
     pvcs: [resource('PersistentVolumeClaim', 'test-pvc', {
@@ -130,6 +147,19 @@
     namespaces,
     resources,
   };
+  const onDemandResources = [
+    'namespaces',
+    'replicasets',
+    'jobs',
+    'cronjobs',
+    'pvs',
+    'storageclasses',
+    'serviceaccounts',
+    'clusterroles',
+    'roles',
+    'clusterrolebindings',
+    'rolebindings',
+  ];
 
   window.kubeApi = {
     getContexts: async () => ({
@@ -144,10 +174,16 @@
       selectedContextId = contextId;
       return window.kubeApi.getContexts();
     },
-    getSnapshot: async (_namespace, contextId) => ({
-      ...JSON.parse(JSON.stringify(snapshot)),
-      context: contexts.find((context) => context.id === (contextId || selectedContextId))?.name || 'test-cluster',
-    }),
+    getSnapshot: async (_namespace, contextId) => {
+      const result = JSON.parse(JSON.stringify(snapshot));
+      for (const kind of onDemandResources) {
+        delete result.resources[kind];
+      }
+      return {
+        ...result,
+        context: contexts.find((context) => context.id === (contextId || selectedContextId))?.name || 'test-cluster',
+      };
+    },
     getResources: async (kind) => resources[kind] || [],
     getResource: async (kind, namespace, name) => {
       const match = (resources[kind] || []).find((item) =>

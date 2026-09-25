@@ -46,7 +46,7 @@ const app = document.querySelector<HTMLDivElement>('#app');
 const state = {
   selectedKind: 'pods' as ResourceKind,
   selectedResourceId: '',
-  collapsedNavGroups: { Storage: true, Observability: true } as Record<string, boolean>,
+  collapsedNavGroups: { Configuration: true, Storage: true, Observability: true } as Record<string, boolean>,
   kubectlInput: '',
   kubectlHistory: [] as string[],
   kubectlResult: null as (KubectlResult & { command: string }) | null,
@@ -504,6 +504,31 @@ export function columnsFor(kind: ResourceKind): Column[] {
     ];
   }
 
+  if (kind === 'serviceaccounts') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Secrets', value: (resource) => String(resource.secrets?.length || 0) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'clusterroles' || kind === 'roles') {
+    return [
+      ...(kind === 'roles' ? [{ label: 'Namespace', value: resourceNamespace }] : []),
+      { label: 'Rules', value: (resource) => String(resource.rules?.length || 0) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'clusterrolebindings' || kind === 'rolebindings') {
+    return [
+      ...(kind === 'rolebindings' ? [{ label: 'Namespace', value: resourceNamespace }] : []),
+      { label: 'Subjects', value: (resource) => String(resource.subjects?.length || 0) },
+      { label: 'Role', value: (resource) => resource.roleRef?.name || '-' },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
   if (kind === 'configmaps') {
     return [
       ...common,
@@ -805,7 +830,7 @@ function render() {
                     ${items
                       .map((item) => {
                         const count = item.kind === 'dashboard'
-                          ? ''
+                          ? 0
                           : dataplane.getResources(state.snapshot, item.kind).length;
                         const active = item.kind === state.section ? 'active' : '';
 
@@ -815,7 +840,7 @@ function render() {
                               <i data-lucide="${item.icon}"></i>
                               ${escapeHtml(item.label)}
                             </span>
-                            ${item.kind === 'dashboard' ? '' : `<span class="nav-count">${count}</span>`}
+                            ${count > 0 ? `<span class="nav-count">${count}</span>` : ''}
                           </button>
                         `;
                       })
@@ -1043,8 +1068,14 @@ function renderKubectlTerminal(): string {
         </div>
         <form class="kubectl-command-form" id="kubectl-form">
           <label class="kubectl-command-field">
-            <span class="sr-only">Kubectl command</span>
-            <input id="kubectl-command" type="text" value="${escapeHtml(state.kubectlInput)}" placeholder="kubectl get pods -A" autocomplete="off" spellcheck="false" ${kubectlDisabled || state.kubectlRunning ? 'disabled' : ''} />
+            <svg class="kubectl-shortcut-hint" viewBox="0 0 108 28" aria-hidden="true" focusable="false">
+              <rect x="1" y="2" width="20" height="24" rx="4"></rect>
+              <text x="11" y="19" text-anchor="middle">k</text>
+              <text class="kubectl-shortcut-plus" x="30" y="18" text-anchor="middle">+</text>
+              <rect class="kubectl-spacebar" x="40" y="6" width="66" height="20" rx="4"></rect>
+              <text class="kubectl-spacebar-label" x="73" y="19" text-anchor="middle">spacebar</text>
+            </svg>
+            <input id="kubectl-command" type="text" aria-label="Kubectl command" value="${escapeHtml(state.kubectlInput)}" placeholder="kubectl get pods -A" autocomplete="off" spellcheck="false" ${kubectlDisabled || state.kubectlRunning ? 'disabled' : ''} />
           </label>
           <button class="primary-button kubectl-run-button" id="kubectl-run" type="submit" ${kubectlDisabled || state.kubectlRunning ? 'disabled' : ''}>
             <i data-lucide="${state.kubectlRunning ? 'loader-circle' : 'play'}"></i>
@@ -1446,7 +1477,19 @@ function bindEvents() {
       state.section = kind as ResourceKind;
       state.selectedKind = state.section;
       state.selectedResourceId = '';
-      if (state.section === 'replicasets' || state.section === 'jobs' || state.section === 'cronjobs' || state.section === 'pvs' || state.section === 'storageclasses' || state.section === 'namespaces') {
+      if (
+        state.section === 'replicasets' ||
+        state.section === 'jobs' ||
+        state.section === 'cronjobs' ||
+        state.section === 'pvs' ||
+        state.section === 'storageclasses' ||
+        state.section === 'namespaces' ||
+        state.section === 'serviceaccounts' ||
+        state.section === 'clusterroles' ||
+        state.section === 'roles' ||
+        state.section === 'clusterrolebindings' ||
+        state.section === 'rolebindings'
+      ) {
         void loadResources(state.section);
       } else {
         render();

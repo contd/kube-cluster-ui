@@ -2,6 +2,7 @@
 export type ResourceKind =
   | 'nodes'
   | 'namespaces'
+  | 'serviceaccounts'
   | 'pods'
   | 'deployments'
   | 'daemonsets'
@@ -16,6 +17,10 @@ export type ResourceKind =
   | 'pvcs'
   | 'pvs'
   | 'storageclasses'
+  | 'clusterroles'
+  | 'roles'
+  | 'clusterrolebindings'
+  | 'rolebindings'
   | 'events';
 
 /** Semantic tone used to color resource statuses and dashboard indicators. */
@@ -54,6 +59,10 @@ export type KubeResource = {
   status?: Record<string, unknown>;
   spec?: Record<string, unknown>;
   data?: Record<string, string>;
+  secrets?: unknown[];
+  rules?: unknown[];
+  subjects?: unknown[];
+  roleRef?: { kind?: string; name?: string; apiGroup?: string };
   involvedObject?: {
     kind?: string;
     name?: string;

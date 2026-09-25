@@ -14,6 +14,11 @@ const views = [
   ['Storage Class', 'storageclasses', '12-storageclasses'],
   ['Services', 'services', '13-services'],
   ['Ingresses', 'ingresses', '14-ingresses'],
+  ['Service Accounts', 'serviceaccounts', '20-serviceaccounts'],
+  ['Cluster Roles', 'clusterroles', '21-clusterroles'],
+  ['Roles', 'roles', '22-roles'],
+  ['Cluster Role Bindings', 'clusterrolebindings', '23-clusterrolebindings'],
+  ['Role Bindings', 'rolebindings', '24-rolebindings'],
   ['ConfigMaps', 'configmaps', '15-configmaps'],
   ['Secrets', 'secrets', '16-secrets'],
   ['PVCs', 'pvcs', '17-pvcs'],
@@ -33,6 +38,11 @@ const expectedColumns: Record<string, string[]> = {
   storageclasses: ['Name', 'Provisioner', 'Reclaim Policy', 'Volume Binding Mode', 'Allow Volume Expansion', 'Age'],
   services: ['Name', 'Namespace', 'Age', 'Type', 'Cluster IP', 'Ports'],
   ingresses: ['Name', 'Namespace', 'Age', 'Class', 'Hosts'],
+  serviceaccounts: ['Name', 'Namespace', 'Secrets', 'Age'],
+  clusterroles: ['Name', 'Rules', 'Age'],
+  roles: ['Name', 'Namespace', 'Rules', 'Age'],
+  clusterrolebindings: ['Name', 'Subjects', 'Role', 'Age'],
+  rolebindings: ['Name', 'Namespace', 'Subjects', 'Role', 'Age'],
   configmaps: ['Name', 'Namespace', 'Age', 'Keys'],
   secrets: ['Name', 'Namespace', 'Age', 'Type', 'Keys'],
   pvcs: ['Name', 'Namespace', 'Age', 'Status', 'Capacity', 'StorageClass'],
@@ -106,6 +116,15 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('.summary-card')).toHaveCount(4);
     await expect(page.locator('table')).toHaveCount(0);
     await page.screenshot({ path: 'docs/snapshots/01-dashboard.png', fullPage: true });
+  });
+
+  test('hides zero nav counts until a resource collection loads', async ({ page }) => {
+    const clusterRoles = page.locator('.nav-item[data-kind="clusterroles"]');
+    await expect(clusterRoles.locator('.nav-count')).toHaveCount(0);
+
+    await openNavigationItem(page, 'clusterroles');
+    await expect(page.locator('tbody tr')).not.toHaveCount(0);
+    await expect(clusterRoles.locator('.nav-count')).toHaveText('1');
   });
 
   test('shows CLI availability in hover tooltips', async ({ page }) => {
@@ -352,7 +371,7 @@ test.describe('Kube Cluster UI views', () => {
       const toggle = group.locator('.nav-group-toggle');
       const content = group.locator('.nav-group-content');
       const groupName = await toggle.locator('span').innerText();
-      const startsExpanded = !['Storage', 'Observability'].includes(groupName);
+      const startsExpanded = !['Configuration', 'Storage', 'Observability'].includes(groupName);
 
       await expect(toggle).toHaveAttribute('aria-expanded', String(startsExpanded));
       if (startsExpanded) {

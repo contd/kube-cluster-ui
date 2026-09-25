@@ -1550,11 +1550,14 @@ h1 {
 .kubectl-command-field {
   display: flex;
   flex: 1;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
 }
 
 .kubectl-command-field input {
-  width: 100%;
+  flex: 1;
+  width: auto;
   min-width: 0;
   height: 38px;
   padding: 0 10px;
@@ -1565,6 +1568,40 @@ h1 {
   color: #edf5f6;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
+}
+
+.kubectl-shortcut-hint {
+  flex: 0 0 108px;
+  width: 108px;
+  height: 28px;
+  overflow: visible;
+}
+
+.kubectl-shortcut-hint rect {
+  fill: #18262c;
+  stroke: #60747d;
+  stroke-width: 1;
+}
+
+.kubectl-shortcut-hint text {
+  fill: #d5e1e4;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.kubectl-shortcut-hint .kubectl-shortcut-plus {
+  fill: #93a7af;
+  font-size: 12px;
+}
+
+.kubectl-shortcut-hint .kubectl-spacebar {
+  fill: #111a1e;
+}
+
+.kubectl-shortcut-hint .kubectl-spacebar-label {
+  font-size: 8px;
+  font-weight: 500;
 }
 
 .kubectl-command-field input::placeholder {

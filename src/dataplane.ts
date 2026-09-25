@@ -23,6 +23,11 @@ export const navItems: NavItem[] = [
   { kind: 'cronjobs', label: 'CronJobs', group: 'Workloads', icon: 'calendar-clock' },
   { kind: 'services', label: 'Services', group: 'Network', icon: 'route' },
   { kind: 'ingresses', label: 'Ingresses', group: 'Network', icon: 'globe-2' },
+  { kind: 'serviceaccounts', label: 'Service Accounts', group: 'Access Control', icon: 'user-round' },
+  { kind: 'clusterroles', label: 'Cluster Roles', group: 'Access Control', icon: 'shield' },
+  { kind: 'roles', label: 'Roles', group: 'Access Control', icon: 'key-round' },
+  { kind: 'clusterrolebindings', label: 'Cluster Role Bindings', group: 'Access Control', icon: 'shield-check' },
+  { kind: 'rolebindings', label: 'Role Bindings', group: 'Access Control', icon: 'link' },
   { kind: 'configmaps', label: 'ConfigMaps', group: 'Configuration', icon: 'file-cog' },
   { kind: 'secrets', label: 'Secrets', group: 'Configuration', icon: 'key' },
   { kind: 'pvcs', label: 'PVCs', group: 'Storage', icon: 'hard-drive' },
@@ -41,6 +46,9 @@ export const namespacedKinds = new Set<ResourceKind>([
   'configmaps',
   'secrets',
   'pvcs',
+  'serviceaccounts',
+  'roles',
+  'rolebindings',
   'events',
 ]);
 
@@ -572,6 +580,31 @@ export function columnsFor(kind: ResourceKind): Column[] {
       { label: 'Reclaim Policy', value: storageClassReclaimPolicy },
       { label: 'Volume Binding Mode', value: storageClassBindingMode },
       { label: 'Allow Volume Expansion', value: storageClassExpansion },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'serviceaccounts') {
+    return [
+      { label: 'Namespace', value: resourceNamespace },
+      { label: 'Secrets', value: (resource) => String(resource.secrets?.length || 0) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'clusterroles' || kind === 'roles') {
+    return [
+      ...(kind === 'roles' ? [{ label: 'Namespace', value: resourceNamespace }] : []),
+      { label: 'Rules', value: (resource) => String(resource.rules?.length || 0) },
+      { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
+    ];
+  }
+
+  if (kind === 'clusterrolebindings' || kind === 'rolebindings') {
+    return [
+      ...(kind === 'rolebindings' ? [{ label: 'Namespace', value: resourceNamespace }] : []),
+      { label: 'Subjects', value: (resource) => String(resource.subjects?.length || 0) },
+      { label: 'Role', value: (resource) => resource.roleRef?.name || '-' },
       { label: 'Age', value: (resource) => age(metadata(resource).creationTimestamp) },
     ];
   }

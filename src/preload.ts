@@ -16,7 +16,17 @@ type ResourceKind =
   | 'secrets'
   | 'pvcs'
   | 'pvs'
+  | 'serviceaccounts'
+  | 'clusterroles'
+  | 'roles'
+  | 'clusterrolebindings'
+  | 'rolebindings'
   | 'storageclasses'
+  | 'serviceaccounts'
+  | 'clusterroles'
+  | 'roles'
+  | 'clusterrolebindings'
+  | 'rolebindings'
   | 'events';
 
 contextBridge.exposeInMainWorld('kubeApi', {

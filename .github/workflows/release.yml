@@ -115,7 +115,7 @@ jobs:
             cp -R report-input/e2e "wiki/${report_dir}/e2e"
           fi
 
-          raw_base="https://raw.githubusercontent.com/wiki/${GITHUB_REPOSITORY}/${wiki_branch}/${report_dir}"
+          raw_base="https://raw.githubusercontent.com/wiki/${GITHUB_REPOSITORY}/${report_dir}"
           report_page="Test-Reports-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.md"
           cat > "wiki/${report_page}" <<EOF
           # Test reports: run ${GITHUB_RUN_NUMBER}

@@ -22,6 +22,7 @@ Download the newest packaged releases from GitHub:
 - [`Linux` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
 - [Latest release](https://github.com/contd/kube-cluster-ui/releases/latest)
 - [Latest `GitHub` Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+- [Latest build Test Reports](https://github.com/contd/kube-cluster-ui/wiki)
 
 ---
 

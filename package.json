@@ -30,7 +30,7 @@
     "test:e2e": "playwright test && npm run generate:video-preview",
     "test:unit": "vitest run",
     "test": "vitest run && npm run test:e2e",
-    "generate:video-preview": "ffmpeg -y -i docs/snapshots/video.webm -vf \"fps=1,scale=1280:-1\" docs/video-preview.gif"
+    "generate:video-preview": "node scripts/generate-video-preview.js"
   },
   "license": "MIT",
   "devDependencies": {

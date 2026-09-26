@@ -7,6 +7,11 @@ test.use({ video: 'on' });
 // This suite uses a deterministic mocked cluster. That keeps the recorded flow
 // independent of kubectl, a kubeconfig, or a live Kubernetes cluster.
 test.describe('demo video flow', () => {
+  test.skip(
+    Boolean(process.env.CI || process.env.GITHUB_ACTIONS),
+    'Demo video recording is generated locally, not in CI.',
+  );
+
   // Start from the dashboard and wait for the data source indicator before any
   // navigation. This prevents the recording from capturing an intermediate
   // loading state as if it were part of the intended workflow.

@@ -139,7 +139,31 @@ jobs:
           fi
           home_entry="- [Run ${GITHUB_RUN_NUMBER}, attempt ${GITHUB_RUN_ATTEMPT}](${report_page%.md})"
           if ! grep -Fq -- "${home_entry}" wiki/Home.md; then
-            printf '%s\n' "${home_entry}" >> wiki/Home.md
+            awk -v entry="${home_entry}" '
+              /^## Automated test reports$/ {
+                print
+                print ""
+                pending = 1
+                next
+              }
+              pending && /^[[:space:]]*$/ {
+                print entry
+                pending = 0
+                next
+              }
+              pending {
+                print entry
+                pending = 0
+              }
+              { print }
+              END {
+                if (pending) {
+                  print ""
+                  print entry
+                }
+              }
+            ' wiki/Home.md > wiki/Home.md.tmp
+            mv wiki/Home.md.tmp wiki/Home.md
           fi
 
           git -C wiki config user.name 'github-actions[bot]'

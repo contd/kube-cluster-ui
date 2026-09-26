@@ -27,7 +27,15 @@ jobs:
         run: npm ci
 
       - name: Run unit tests
-        run: npm run test:unit
+        run: npx vitest run --reporter=html --outputFile=reports/unit/index.html
+
+      - name: Upload unit test HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-html-report
+          path: reports/unit
+          if-no-files-found: warn
 
   test-e2e:
     name: E2E tests
@@ -53,6 +61,92 @@ jobs:
 
       - name: Run E2E tests
         run: npm run test:e2e
+
+      - name: Upload E2E HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-html-report
+          path: reports/e2e
+          if-no-files-found: warn
+
+  publish-test-reports:
+    name: Publish test reports to wiki
+    runs-on: ubuntu-22.04
+    needs: [test-unit, test-e2e]
+    if: always() && !cancelled()
+    env:
+      WIKI_TOKEN: ${{ secrets.WIKI_TOKEN }}
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download unit test report
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: unit-test-html-report
+          path: report-input/unit
+          if-no-artifact-found: warn
+
+      - name: Download E2E test report
+        if: always()
+        uses: actions/download-artifact@v4
+        with:
+          name: e2e-test-html-report
+          path: report-input/e2e
+          if-no-artifact-found: warn
+
+      - name: Publish reports as wiki entries
+        if: env.WIKI_TOKEN != ''
+        run: |
+          set -euo pipefail
+
+          git clone "https://x-access-token:${WIKI_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
+          wiki_branch="$(git -C wiki branch --show-current)"
+          report_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          report_dir="test-reports/${report_id}"
+          mkdir -p "wiki/${report_dir}"
+
+          if [ -d report-input/unit ]; then
+            cp -R report-input/unit "wiki/${report_dir}/unit"
+          fi
+          if [ -d report-input/e2e ]; then
+            cp -R report-input/e2e "wiki/${report_dir}/e2e"
+          fi
+
+          raw_base="https://raw.githubusercontent.com/wiki/${GITHUB_REPOSITORY}/${wiki_branch}/${report_dir}"
+          report_page="Test-Reports-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.md"
+          cat > "wiki/${report_page}" <<EOF
+          # Test reports: run ${GITHUB_RUN_NUMBER}
+
+          Trigger: ${GITHUB_EVENT_NAME}
+
+          Ref: ${GITHUB_REF_NAME}
+
+          Commit: [${GITHUB_SHA}](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})
+
+          - [Unit test HTML report](${raw_base}/unit/index.html)
+          - [End-to-end HTML report](${raw_base}/e2e/index.html)
+          - [GitHub Actions run](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+          EOF
+
+          if [ ! -f wiki/Home.md ]; then
+            printf '# Home\n' > wiki/Home.md
+          fi
+          if ! grep -q '^## Automated test reports$' wiki/Home.md; then
+            printf '\n## Automated test reports\n\n' >> wiki/Home.md
+          fi
+          home_entry="- [Run ${GITHUB_RUN_NUMBER}, attempt ${GITHUB_RUN_ATTEMPT}](${report_page%.md})"
+          if ! grep -Fq -- "${home_entry}" wiki/Home.md; then
+            printf '%s\n' "${home_entry}" >> wiki/Home.md
+          fi
+
+          git -C wiki config user.name 'github-actions[bot]'
+          git -C wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git -C wiki add "${report_dir}" "${report_page}" Home.md
+          git -C wiki commit -m "Add test reports for run ${GITHUB_RUN_NUMBER}"
+          git -C wiki push origin "${wiki_branch}"
 
   build-windows:
     name: Build Windows

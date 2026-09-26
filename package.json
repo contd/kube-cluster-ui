@@ -49,6 +49,7 @@
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
     "@typescript-eslint/parser": "^5.62.0",
+    "@vitest/ui": "^2.1.9",
     "electron": "44.3.0",
     "electron-builder": "^26.15.3",
     "electron-winstaller": "^5.4.4",

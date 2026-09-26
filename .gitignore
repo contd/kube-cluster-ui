@@ -94,3 +94,6 @@ out/
 # Electron-builder
 dist/
 
+# Generated CI test reports
+reports/
+

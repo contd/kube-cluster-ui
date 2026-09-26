@@ -10,6 +10,7 @@ export default defineConfig({
     ? [
         ['github'],
         ['html', { outputFolder: 'reports/e2e', open: 'never' }],
+        ['json', { outputFile: 'reports/e2e/results.json' }],
       ]
     : 'list',
   use: {

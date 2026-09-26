@@ -27,7 +27,12 @@ jobs:
         run: npm ci
 
       - name: Run unit tests
-        run: npx vitest run --reporter=html --outputFile=reports/unit/index.html
+        run: >-
+          npx vitest run
+          --reporter=html
+          --reporter=json
+          --outputFile.html=reports/unit/index.html
+          --outputFile.json=reports/unit/results.json
 
       - name: Upload unit test HTML report
         if: always()
@@ -81,6 +86,9 @@ jobs:
       contents: read
 
     steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
       - name: Download unit test report
         if: always()
         uses: actions/download-artifact@v4
@@ -104,19 +112,11 @@ jobs:
 
           git clone "https://x-access-token:${WIKI_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" wiki
           wiki_branch="$(git -C wiki branch --show-current)"
-          report_id="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          report_dir="test-reports/${report_id}"
-          mkdir -p "wiki/${report_dir}"
-
-          if [ -d report-input/unit ]; then
-            cp -R report-input/unit "wiki/${report_dir}/unit"
-          fi
-          if [ -d report-input/e2e ]; then
-            cp -R report-input/e2e "wiki/${report_dir}/e2e"
-          fi
-
-          raw_base="https://raw.githubusercontent.com/wiki/${GITHUB_REPOSITORY}/${report_dir}"
           report_page="Test-Reports-${GITHUB_RUN_NUMBER}-${GITHUB_RUN_ATTEMPT}.md"
+          node scripts/test-reports-to-markdown.js \
+            report-input/unit/results.json \
+            report-input/e2e/results.json \
+            report-input/test-reports.md
           cat > "wiki/${report_page}" <<EOF
           # Test reports: run ${GITHUB_RUN_NUMBER}
 
@@ -126,10 +126,10 @@ jobs:
 
           Commit: [${GITHUB_SHA}](https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})
 
-          - [Unit test HTML report](${raw_base}/unit/index.html)
-          - [End-to-end HTML report](${raw_base}/e2e/index.html)
           - [GitHub Actions run](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})
+
           EOF
+          cat report-input/test-reports.md >> "wiki/${report_page}"
 
           if [ ! -f wiki/Home.md ]; then
             printf '# Home\n' > wiki/Home.md
@@ -144,7 +144,7 @@ jobs:
 
           git -C wiki config user.name 'github-actions[bot]'
           git -C wiki config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git -C wiki add "${report_dir}" "${report_page}" Home.md
+          git -C wiki add "${report_page}" Home.md
           git -C wiki commit -m "Add test reports for run ${GITHUB_RUN_NUMBER}"
           git -C wiki push origin "${wiki_branch}"
 

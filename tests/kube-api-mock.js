@@ -161,6 +161,18 @@
     'rolebindings',
   ];
 
+  let kubeconfigSearchPath = '/tmp/playwright-kubeconfig';
+  const savedKubeconfigs = [{
+    id: 'saved-config-1',
+    label: 'demo-context',
+    kubeconfig: 'apiVersion: v1\nkind: Config\ncontexts:\n- name: demo-context\n',
+  }];
+  const cliToolsAvailability = {
+    kubectl: { available: true, message: '', path: '/usr/local/bin/kubectl' },
+    docker: { available: true, message: '', path: '/usr/local/bin/docker' },
+    kind: { available: true, message: '', path: '/usr/local/bin/kind' },
+  };
+
   window.kubeApi = {
     getContexts: async () => ({
       defaultPath: '/tmp/playwright-kubeconfig',
@@ -194,17 +206,46 @@
       }
       return match;
     },
-    addKubeconfig: async () => ({
-      defaultPath: '/tmp/playwright-kubeconfig',
-      contexts,
-      selectedContextId,
-    }),
+    addKubeconfig: async (kubeconfig) => {
+      savedKubeconfigs.push({
+        id: `saved-config-${savedKubeconfigs.length + 1}`,
+        label: 'pasted-context',
+        kubeconfig,
+      });
+      return {
+        defaultPath: '/tmp/playwright-kubeconfig',
+        contexts,
+        selectedContextId,
+      };
+    },
     checkCliTools: async () => ({
-      kubectl: { available: true, message: '' },
-      docker: { available: true, message: '' },
-      kind: { available: true, message: '' },
+      ...cliToolsAvailability,
     }),
+    getSettings: async () => ({ kubeconfigSearchPath, savedKubeconfigs, cliToolsAvailability }),
+    setKubeconfigSearchPath: async (searchPath) => {
+      kubeconfigSearchPath = searchPath;
+      return { kubeconfigSearchPath, savedKubeconfigs, cliToolsAvailability };
+    },
+    updateSavedKubeconfig: async (id, kubeconfig) => {
+      const index = savedKubeconfigs.findIndex((item) => item.id === id);
+      if (index >= 0) {
+        savedKubeconfigs[index] = { ...savedKubeconfigs[index], kubeconfig };
+      }
+      return { kubeconfigSearchPath, savedKubeconfigs, cliToolsAvailability };
+    },
     runKubectl: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
+  };
+
+  window.appInfo = {
+    getAbout: async () => ({
+      productName: 'Kube Cluster UI',
+      version: '2.5.0',
+      repository: { type: 'git', url: 'https://github.com/contd/kube-cluster-ui.git' },
+      description: 'A Kubernetes cluster browser inspired by LENS.',
+      author: { name: 'Kube Cluster UI', email: '' },
+    }),
+    onShowAbout: (listener) => window.addEventListener('app:show-about', listener),
+    onShowSettings: (listener) => window.addEventListener('app:show-settings', listener),
   };
 
   let selectedContextId = contexts[0].id;

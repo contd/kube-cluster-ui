@@ -60,6 +60,8 @@ Each entry documents a view covered by a Playwright test. When adding a navigati
 - **Roles:** Namespace-scoped RBAC roles and rule counts. <br><img src="docs/snapshots/22-roles.png" alt="Roles view" width="640">
 - **Cluster Role Bindings:** Cluster-wide role references and subject counts. <br><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings view" width="640">
 - **Role Bindings:** Namespace-scoped role references and subject counts. <br><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings view" width="640">
+- **Settings:** Editable kubeconfig search path and detected CLI executable locations. <br><img src="docs/snapshots/25-settings.png" alt="Settings view with kubeconfig path and CLI locations" width="640">
+- **Saved kubeconfigs:** Edit and save kubeconfig documents previously pasted from the Cluster menu. <br><img src="docs/snapshots/26-settings-saved-kubeconfigs.png" alt="Settings view with an editable saved kubeconfig" width="640">
 
 ---
 

@@ -545,6 +545,116 @@ button {
   box-shadow: 0 20px 60px rgba(40, 67, 76, 0.12);
 }
 
+.settings-page {
+  overflow-y: auto;
+}
+
+.settings-card {
+  width: min(760px, 100%);
+}
+
+.settings-form {
+  display: grid;
+  gap: 20px;
+}
+
+.settings-field {
+  display: grid;
+  gap: 8px;
+  color: #405761;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.settings-field input,
+.settings-field textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #cfd7de;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #20242a;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.settings-field textarea {
+  min-height: 92px;
+  resize: vertical;
+  white-space: pre;
+}
+
+.saved-kubeconfigs {
+  display: grid;
+  gap: 12px;
+}
+
+.saved-kubeconfigs-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.saved-kubeconfigs-heading h2 {
+  margin: 0;
+  color: #253f48;
+  font-size: 0.9375rem;
+}
+
+.saved-kubeconfigs-heading > span {
+  color: #73848b;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+}
+
+.saved-kubeconfig-entry {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0 2px;
+  border-top: 1px solid #dbe4e7;
+}
+
+.saved-kubeconfig-input {
+  min-height: 190px !important;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.saved-kubeconfig-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-empty {
+  margin: 0;
+  color: #73848b;
+  font-size: 0.8125rem;
+}
+
+.settings-field textarea[readonly] {
+  background: #f0f4f5;
+  color: #455d66;
+  cursor: default;
+}
+
+.settings-feedback {
+  margin: -8px 0 0;
+  color: #267650;
+  font-size: 0.8125rem;
+}
+
+.settings-feedback.error {
+  color: #b94338;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
 .about-back {
   height: 36px;
   margin-bottom: 52px;
@@ -647,6 +757,43 @@ button {
 
 [data-theme="dark"] .about-details {
   border-color: #38525d;
+}
+
+[data-theme="dark"] .settings-field {
+  color: #b7c9ce;
+}
+
+[data-theme="dark"] .saved-kubeconfigs-heading h2 {
+  color: #e1ecee;
+}
+
+[data-theme="dark"] .saved-kubeconfig-entry {
+  border-color: #38525d;
+}
+
+[data-theme="dark"] .saved-kubeconfigs-heading > span,
+[data-theme="dark"] .settings-empty {
+  color: #a9bdc5;
+}
+
+[data-theme="dark"] .settings-field input,
+[data-theme="dark"] .settings-field textarea {
+  border-color: #38525d;
+  background: #101b21;
+  color: #edf5f6;
+}
+
+[data-theme="dark"] .settings-field textarea[readonly] {
+  background: #17262d;
+  color: #b7c9ce;
+}
+
+[data-theme="dark"] .settings-feedback {
+  color: #78d5a8;
+}
+
+[data-theme="dark"] .settings-feedback.error {
+  color: #ff9b90;
 }
 
 [data-theme="dark"] .about-details dd {

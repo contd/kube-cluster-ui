@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from 'electron';
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
+import { constants as fsConstants } from 'node:fs';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -19,14 +20,16 @@ if (started) {
   app.quit();
 }
 
-const defaultKubeconfigPath = '/Users/jason/apex/kubeconfig';
+const defaultKubeconfigPath = path.join(os.homedir(), '.kube', 'config');
 const settingsFileName = 'settings.json';
 
 const resolveKubeconfigCandidates = async (): Promise<string[]> => {
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
   const envKubeconfig = process.env.KUBECONFIG || '';
+  const settings = await readSettings();
 
   const candidatePaths = [
+    settings.kubeconfigSearchPath || '',
     ...envKubeconfig
       .split(path.delimiter)
       .map((value) => value.trim())
@@ -63,7 +66,18 @@ const resolveKubeconfigCandidates = async (): Promise<string[]> => {
 
 const resolveDefaultKubeconfigPath = async (): Promise<string> => {
   const candidates = await resolveKubeconfigCandidates();
-  return candidates[0] || defaultKubeconfigPath;
+  const settings = await readSettings();
+  return candidates[0] || settings.kubeconfigSearchPath || defaultKubeconfigPath;
+};
+
+const normalizeKubeconfigSearchPath = (searchPath: string): string => {
+  const value = searchPath.trim();
+  const expandedPath = value === '~'
+    ? os.homedir()
+    : value.startsWith(`~${path.sep}`)
+      ? path.join(os.homedir(), value.slice(2))
+      : value;
+  return path.resolve(expandedPath);
 };
 
 const resourceMap = {
@@ -113,6 +127,7 @@ type SavedCluster = {
 type AppSettings = {
   selectedContextId?: string;
   clusters?: SavedCluster[];
+  kubeconfigSearchPath?: string;
 };
 
 const namespacedResources = new Set<ResourceKind>([
@@ -576,11 +591,38 @@ const executeKubectl = (args: string[]) => {
   });
 };
 
-const checkCommandAvailability = (
+const resolveCommandPath = async (command: string): Promise<string> => {
+  const pathEntries = (process.env.PATH || '').split(path.delimiter);
+  const extensions = process.platform === 'win32'
+    ? (process.env.PATHEXT || '.EXE;.CMD;.BAT;.COM').split(';')
+    : [''];
+
+  for (const entry of pathEntries) {
+    for (const extension of extensions) {
+      const executablePath = path.resolve(entry || process.cwd(), `${command}${extension}`);
+      try {
+        await fs.access(
+          executablePath,
+          process.platform === 'win32' ? undefined : fsConstants.X_OK,
+        );
+        if ((await fs.stat(executablePath)).isFile()) {
+          return executablePath;
+        }
+      } catch {
+        // Continue searching the remaining PATH entries.
+      }
+    }
+  }
+
+  return '';
+};
+
+const checkCommandAvailability = async (
   command: string,
   args: string[],
   label: string,
-): Promise<{ available: boolean; message: string }> => {
+): Promise<{ available: boolean; message: string; path: string }> => {
+  const executablePath = await resolveCommandPath(command);
   return new Promise((resolve) => {
     execFile(
       command,
@@ -588,12 +630,13 @@ const checkCommandAvailability = (
       { encoding: 'utf8', timeout: 10_000, windowsHide: true },
       (error) => {
         if (!error || typeof error.code === 'number') {
-          resolve({ available: true, message: '' });
+          resolve({ available: true, message: '', path: executablePath });
           return;
         }
 
         resolve({
           available: false,
+          path: '',
           message: error.killed
             ? `The ${label} availability check timed out.`
             : `${label} is not available on PATH. Install it and restart the app.`,
@@ -613,8 +656,90 @@ const checkCliToolsAvailability = async () => {
   return { kubectl, docker, kind };
 };
 
+const getSettingsInfo = async () => {
+  const settings = await readSettings();
+  return {
+    kubeconfigSearchPath:
+      settings.kubeconfigSearchPath || defaultKubeconfigPath,
+    savedKubeconfigs: (settings.clusters || []).map((cluster, index) => {
+      const contexts = readContextsFromString(
+        `saved:${cluster.id}`,
+        cluster.kubeconfig,
+      );
+      return {
+        id: cluster.id,
+        label: contexts.map((context) => context.name).join(', ')
+          || `Saved kubeconfig ${index + 1}`,
+        kubeconfig: cluster.kubeconfig,
+      };
+    }),
+    cliToolsAvailability: await checkCliToolsAvailability(),
+  };
+};
+
 const registerKubernetesHandlers = () => {
   ipcMain.handle('cluster:checkCliTools', checkCliToolsAvailability);
+  ipcMain.handle('cluster:getSettings', getSettingsInfo);
+  ipcMain.handle(
+    'cluster:setKubeconfigSearchPath',
+    async (_event, searchPath: string) => {
+      if (typeof searchPath !== 'string' || !searchPath.trim()) {
+        throw new Error('Enter a kubeconfig search path.');
+      }
+
+      const settings = await readSettings();
+      await writeSettings({
+        ...settings,
+        kubeconfigSearchPath: normalizeKubeconfigSearchPath(searchPath),
+      });
+      return getSettingsInfo();
+    },
+  );
+  ipcMain.handle(
+    'cluster:updateSavedKubeconfig',
+    async (_event, id: string, kubeconfig: string) => {
+      const parsedContexts = readContextsFromString(`saved:${id}`, kubeconfig);
+      if (!parsedContexts.length) {
+        throw new Error('The kubeconfig contains no valid contexts.');
+      }
+
+      const settings = await readSettings();
+      const clusterIndex = (settings.clusters || []).findIndex(
+        (cluster) => cluster.id === id,
+      );
+      if (clusterIndex < 0) {
+        throw new Error('The saved kubeconfig no longer exists.');
+      }
+
+      const nextId = crypto.createHash('sha256').update(kubeconfig).digest('hex').slice(0, 16);
+      const selectedContextPrefix = `saved:${id}::`;
+      const selectedContextName = settings.selectedContextId?.startsWith(selectedContextPrefix)
+        ? settings.selectedContextId.slice(selectedContextPrefix.length)
+        : '';
+      const retainedContextName = parsedContexts.some(
+        (context) => context.name === selectedContextName,
+      )
+        ? selectedContextName
+        : parsedContexts[0].name;
+      const clusters = (settings.clusters || []).filter(
+        (cluster) => cluster.id !== id && cluster.id !== nextId,
+      );
+      clusters.splice(Math.min(clusterIndex, clusters.length), 0, {
+        id: nextId,
+        kubeconfig,
+      });
+
+      await writeSettings({
+        ...settings,
+        clusters,
+        ...(settings.selectedContextId?.startsWith(selectedContextPrefix)
+          ? { selectedContextId: `saved:${nextId}::${retainedContextName}` }
+          : {}),
+      });
+
+      return getSettingsInfo();
+    },
+  );
 
   ipcMain.handle('cluster:getContexts', async () => {
     const resolvedKubeconfigPath = await resolveDefaultKubeconfigPath();
@@ -843,6 +968,10 @@ const createApplicationMenu = (mainWindow: BrowserWindow) => {
     label: `About ${packageMetadata.productName}`,
     click: () => mainWindow.webContents.send('app:show-about'),
   });
+  const settingsMenuItem = () => ({
+    label: 'Settings',
+    click: () => mainWindow.webContents.send('app:show-settings'),
+  });
   const editMenu = {
     label: 'Edit',
     submenu: [
@@ -901,7 +1030,7 @@ const createApplicationMenu = (mainWindow: BrowserWindow) => {
         viewMenu,
         {
           label: 'Help',
-          submenu: [aboutMenuItem()],
+          submenu: [settingsMenuItem(), { type: 'separator' as const }, aboutMenuItem()],
         },
       ]
     : [
@@ -910,7 +1039,7 @@ const createApplicationMenu = (mainWindow: BrowserWindow) => {
         viewMenu,
         {
           label: 'Help',
-          submenu: [aboutMenuItem()],
+          submenu: [settingsMenuItem(), { type: 'separator' as const }, aboutMenuItem()],
         },
       ];
   const menu = Menu.buildFromTemplate(template);

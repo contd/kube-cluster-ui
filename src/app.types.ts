@@ -94,6 +94,7 @@ export type KubectlResult = {
 export type CliAvailability = {
   available: boolean;
   message: string;
+  path?: string;
 };
 
 /** Startup availability results for the command-line tools shown in the status bar. */
@@ -101,6 +102,20 @@ export type CliToolsAvailability = {
   kubectl: CliAvailability;
   docker: CliAvailability;
   kind: CliAvailability;
+};
+
+/** Pasted kubeconfig content persisted by the application. */
+export type SavedKubeconfig = {
+  id: string;
+  label: string;
+  kubeconfig: string;
+};
+
+/** Editable application configuration and locally detected command paths. */
+export type SettingsInfo = {
+  kubeconfigSearchPath: string;
+  savedKubeconfigs: SavedKubeconfig[];
+  cliToolsAvailability: CliToolsAvailability;
 };
 
 /** A selectable kubeconfig context together with the file and cluster identity it represents. */
@@ -195,6 +210,15 @@ export type KubeApi = {
 
   /** Checks whether kubectl, Docker, and kind can be launched locally. */
   checkCliTools: () => Promise<CliToolsAvailability>;
+
+  /** Reads the configured kubeconfig search path and detected CLI locations. */
+  getSettings: () => Promise<SettingsInfo>;
+
+  /** Persists a kubeconfig file or directory to include in context discovery. */
+  setKubeconfigSearchPath: (searchPath: string) => Promise<SettingsInfo>;
+
+  /** Validates and updates one previously pasted kubeconfig. */
+  updateSavedKubeconfig: (id: string, kubeconfig: string) => Promise<SettingsInfo>;
 };
 
 /** Presentation metadata for one grouped sidebar entry, including Dashboard or a resource view. */
@@ -243,6 +267,9 @@ declare global {
        * @param listener - Callback invoked for each About-dialog request.
        */
       onShowAbout: (listener: () => void) => void;
+
+      /** Registers a listener invoked when the host application requests Settings. */
+      onShowSettings: (listener: () => void) => void;
     };
   }
 }

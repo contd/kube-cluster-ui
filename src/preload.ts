@@ -48,6 +48,11 @@ contextBridge.exposeInMainWorld('kubeApi', {
   runKubectl: (command: string, contextId: string) =>
     ipcRenderer.invoke('cluster:runKubectl', command, contextId),
   checkCliTools: () => ipcRenderer.invoke('cluster:checkCliTools'),
+  getSettings: () => ipcRenderer.invoke('cluster:getSettings'),
+  setKubeconfigSearchPath: (searchPath: string) =>
+    ipcRenderer.invoke('cluster:setKubeconfigSearchPath', searchPath),
+  updateSavedKubeconfig: (id: string, kubeconfig: string) =>
+    ipcRenderer.invoke('cluster:updateSavedKubeconfig', id, kubeconfig),
 });
 
 contextBridge.exposeInMainWorld('darkMode', {
@@ -59,5 +64,8 @@ contextBridge.exposeInMainWorld('appInfo', {
   getAbout: () => ipcRenderer.invoke('app:getAbout'),
   onShowAbout: (listener: () => void) => {
     ipcRenderer.on('app:show-about', listener);
+  },
+  onShowSettings: (listener: () => void) => {
+    ipcRenderer.on('app:show-settings', listener);
   },
 });

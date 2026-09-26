@@ -13,6 +13,7 @@ import type {
   NavItem,
   ResourceKind,
   Snapshot,
+  SavedKubeconfig,
   SortDirection,
   StatusTone,
   Theme,
@@ -70,8 +71,15 @@ const state = {
   sortColumn: 'Name',
   sortDirection: 'ascending' as SortDirection,
   section: 'dashboard' as 'dashboard' | ResourceKind,
-  view: 'dashboard' as 'dashboard' | 'about',
+  view: 'dashboard' as 'dashboard' | 'about' | 'settings',
   about: null as AboutInfo | null,
+  kubeconfigSearchPath: '',
+  settingsLoading: false,
+  settingsSaving: false,
+  settingsSaved: false,
+  settingsError: '',
+  savedKubeconfigs: [] as SavedKubeconfig[],
+  kubeconfigDrafts: {} as Record<string, string>,
 };
 
 /** Applies the selected theme to the document and persists it for the next launch. */
@@ -710,6 +718,13 @@ function render() {
     return;
   }
 
+  if (state.view === 'settings') {
+    app.innerHTML = renderSettings();
+    createIcons({ icons });
+    bindSettingsEvents();
+    return;
+  }
+
   const currentNav = navItems.find((item) => item.kind === (state.section === 'dashboard' ? 'dashboard' : state.selectedKind));
   const resources = dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query);
   const selected = dataplane.selectedResource(resources, state.selectedResourceId);
@@ -861,6 +876,10 @@ function render() {
           </div>
 
           <div class="top-actions">
+            <button class="icon-button" id="open-settings" title="Settings" aria-label="Settings">
+              <i data-lucide="settings-2"></i>
+            </button>
+
             <label class="control" aria-label="Namespace">
               <i data-lucide="layers-2" aria-hidden="true"></i>
               <select id="namespace" aria-label="Namespace">
@@ -976,6 +995,204 @@ function bindAboutEvents(): void {
   document.querySelector<HTMLButtonElement>('#about-back')?.addEventListener('click', () => {
     state.view = 'dashboard';
     render();
+  });
+}
+
+/** Renders the editable kubeconfig search path and read-only CLI executable paths. */
+function renderSettings(): string {
+  const cliPaths = state.cliToolsAvailability
+    ? (['docker', 'kind', 'kubectl'] as const)
+        .map((tool) => `${tool}: ${state.cliToolsAvailability?.[tool].path || 'Not found on PATH'}`)
+        .join('\n')
+    : 'Checking CLI locations...';
+
+  return `
+    <main class="about-page settings-page">
+      <section class="about-card settings-card">
+        <button class="tool-button about-back" id="settings-back">
+          <i data-lucide="arrow-left"></i>
+          Back to cluster
+        </button>
+        <div class="about-mark"><i data-lucide="settings-2"></i></div>
+        <div class="eyebrow">Configuration</div>
+        <h1>Settings</h1>
+        <form class="settings-form" id="settings-form">
+          <label class="settings-field" for="kubeconfig-search-path">
+            <span>Kubeconfig search path</span>
+            <input id="kubeconfig-search-path" type="text" value="${escapeHtml(state.kubeconfigSearchPath)}" placeholder="Path to a kubeconfig file or directory" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''} />
+          </label>
+          <section class="saved-kubeconfigs" aria-labelledby="saved-kubeconfigs-title">
+            <div class="saved-kubeconfigs-heading">
+              <h2 id="saved-kubeconfigs-title">Pasted kubeconfigs</h2>
+              <span>${state.savedKubeconfigs.length}</span>
+            </div>
+            ${state.savedKubeconfigs.length
+              ? state.savedKubeconfigs.map((saved) => `
+                <article class="saved-kubeconfig-entry" data-saved-kubeconfig-id="${escapeHtml(saved.id)}">
+                  <label class="settings-field" for="saved-kubeconfig-${escapeHtml(saved.id)}">
+                    <span>${escapeHtml(saved.label)}</span>
+                    <textarea id="saved-kubeconfig-${escapeHtml(saved.id)}" class="saved-kubeconfig-input" rows="8" spellcheck="false" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>${escapeHtml(state.kubeconfigDrafts[saved.id] ?? saved.kubeconfig)}</textarea>
+                  </label>
+                  <div class="saved-kubeconfig-actions">
+                    <button class="primary-button saved-kubeconfig-save" type="button" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>Save kubeconfig</button>
+                  </div>
+                </article>
+              `).join('')
+              : '<p class="settings-empty">No pasted kubeconfigs saved.</p>'}
+          </section>
+          <label class="settings-field" for="cli-executable-paths">
+            <span>Detected CLI executable paths</span>
+            <textarea id="cli-executable-paths" rows="3" readonly>${escapeHtml(cliPaths)}</textarea>
+          </label>
+          ${state.settingsError ? `<p class="settings-feedback error" role="alert">${escapeHtml(state.settingsError)}</p>` : ''}
+          ${state.settingsSaved ? '<p class="settings-feedback" role="status">Settings saved.</p>' : ''}
+          <div class="settings-actions">
+            <button class="tool-button" id="cancel-settings" type="button">Cancel</button>
+            <button class="primary-button" id="save-settings" type="submit" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>
+              ${state.settingsSaving ? 'Saving...' : 'Save settings'}
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+  `;
+}
+
+/** Loads persisted settings and opens the custom Settings view. */
+async function openSettings(): Promise<void> {
+  state.view = 'settings';
+  state.settingsLoading = true;
+  state.settingsSaved = false;
+  state.settingsError = '';
+  render();
+
+  try {
+    if (!window.kubeApi?.getSettings) {
+      throw new Error('Settings are unavailable.');
+    }
+
+    const settings = await window.kubeApi.getSettings();
+    state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
+    state.savedKubeconfigs = settings.savedKubeconfigs;
+    state.kubeconfigDrafts = {};
+    state.cliToolsAvailability = settings.cliToolsAvailability;
+  } catch (error) {
+    state.settingsError = error instanceof Error
+      ? error.message
+      : 'Unable to load settings.';
+  } finally {
+    state.settingsLoading = false;
+    if (state.view === 'settings') {
+      render();
+    }
+  }
+}
+
+/** Connects Settings navigation and persists changed kubeconfig discovery paths. */
+function bindSettingsEvents(): void {
+  const closeSettings = () => {
+    state.view = 'dashboard';
+    render();
+  };
+
+  document.querySelector<HTMLButtonElement>('#settings-back')?.addEventListener('click', closeSettings);
+  document.querySelector<HTMLButtonElement>('#cancel-settings')?.addEventListener('click', closeSettings);
+  document.querySelector<HTMLInputElement>('#kubeconfig-search-path')?.addEventListener('input', (event) => {
+    state.kubeconfigSearchPath = (event.target as HTMLInputElement).value;
+    state.settingsSaved = false;
+  });
+  document.querySelectorAll<HTMLTextAreaElement>('.saved-kubeconfig-input').forEach((input) => {
+    input.addEventListener('input', () => {
+      const entry = input.closest<HTMLElement>('.saved-kubeconfig-entry');
+      const id = entry?.dataset.savedKubeconfigId;
+      if (id) {
+        state.kubeconfigDrafts[id] = input.value;
+      }
+    });
+  });
+  document.querySelectorAll<HTMLButtonElement>('.saved-kubeconfig-save').forEach((button) => {
+    button.addEventListener('click', () => {
+      const entry = button.closest<HTMLElement>('.saved-kubeconfig-entry');
+      const id = entry?.dataset.savedKubeconfigId;
+      const input = entry?.querySelector<HTMLTextAreaElement>('.saved-kubeconfig-input');
+      if (!id || !input) {
+        return;
+      }
+
+      const kubeconfig = input.value;
+      state.kubeconfigDrafts[id] = kubeconfig;
+      state.settingsSaving = true;
+      state.settingsError = '';
+      render();
+
+      void (async () => {
+        try {
+          if (!window.kubeApi?.updateSavedKubeconfig) {
+            throw new Error('Saved kubeconfigs cannot be updated.');
+          }
+
+          const settings = await window.kubeApi.updateSavedKubeconfig(id, kubeconfig);
+          state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
+          state.savedKubeconfigs = settings.savedKubeconfigs;
+          const remainingDrafts = { ...state.kubeconfigDrafts };
+          delete remainingDrafts[id];
+          state.kubeconfigDrafts = remainingDrafts;
+          state.cliToolsAvailability = settings.cliToolsAvailability;
+          state.settingsSaved = true;
+          await loadContexts();
+          await loadSnapshot();
+        } catch (error) {
+          state.settingsError = error instanceof Error
+            ? error.message
+            : 'Unable to update the saved kubeconfig.';
+        } finally {
+          state.settingsSaving = false;
+          if (state.view === 'settings') {
+            render();
+          }
+        }
+      })();
+    });
+  });
+  document.querySelector<HTMLFormElement>('#settings-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const input = document.querySelector<HTMLInputElement>('#kubeconfig-search-path');
+    const searchPath = input?.value.trim() || '';
+    if (!searchPath) {
+      state.settingsError = 'Enter a kubeconfig search path.';
+      render();
+      return;
+    }
+
+    state.kubeconfigSearchPath = searchPath;
+    state.settingsSaving = true;
+    state.settingsSaved = false;
+    state.settingsError = '';
+    render();
+
+    void (async () => {
+      try {
+        if (!window.kubeApi?.setKubeconfigSearchPath) {
+          throw new Error('Settings are unavailable.');
+        }
+
+        const settings = await window.kubeApi.setKubeconfigSearchPath(searchPath);
+        state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
+        state.cliToolsAvailability = settings.cliToolsAvailability;
+        state.settingsSaved = true;
+        await loadContexts();
+        await loadSnapshot();
+      } catch (error) {
+        state.settingsError = error instanceof Error
+          ? error.message
+          : 'Unable to save settings.';
+      } finally {
+        state.settingsSaving = false;
+        if (state.view === 'settings') {
+          render();
+        }
+      }
+    })();
   });
 }
 
@@ -1326,6 +1543,10 @@ export const contextLabel = dataplane.contextLabel;
 
 /** Wires all dashboard controls to state updates, data loading, selection, and clipboard actions. */
 function bindEvents() {
+  document.querySelector<HTMLButtonElement>('#open-settings')?.addEventListener('click', () => {
+    void openSettings();
+  });
+
   document.querySelector<HTMLButtonElement>('#kubectl-clear-history')?.addEventListener('click', () => {
     state.kubectlHistory = [];
     render();
@@ -2120,6 +2341,9 @@ void (async () => {
   render();
   window.appInfo?.onShowAbout(() => {
     void openAbout();
+  });
+  window.appInfo?.onShowSettings(() => {
+    void openSettings();
   });
   await Promise.all([loadContexts(), checkCliToolsAvailability()]);
   await loadSnapshot();

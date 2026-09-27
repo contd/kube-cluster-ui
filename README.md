@@ -5,64 +5,92 @@
 [![macOS build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-macos&label=macOS)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
 [![Linux build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-linux&label=Linux)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
 
+**An open-source desktop workspace for browsing Kubernetes clusters.**
 
-<table>
-	<tr>
-		<td><img src="docs/main-interface.png" alt="Kube Cluster UI main interface" /></td>
-		<td><img src="docs/main-interface-dark.png" alt="Kube Cluster UI dark mode interface" /></td>
-	</tr>
-</table>
+Kubernetes GUI tools can involve trade-offs: some are proprietary or place key workflows behind paid tiers, while others can feel heavier and slower than everyday cluster work needs. Kube Cluster UI aims to make common inspection tasks quick and approachable, with a focused desktop interface for cluster health, workloads, configuration, access control, and events.
 
-## Latest builds
+Browse resources, inspect manifests, switch contexts, and run context-bound `kubectl` commands from one application. The project is built with Electron and TypeScript, and is available for Windows, macOS, and Linux.
 
-Download the newest packaged releases from GitHub:
+## Project Support
 
-- [`Windows` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [`macOS` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [`Linux` builds](https://github.com/contd/kube-cluster-ui/releases/latest)
+Kube Cluster UI is currently supported by:
+
+- Apex Industrial Technologies
+- Veratas Automata
+
+## Downloads and Links
+
+Download the latest packaged release for your platform:
+
+- [Windows](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [macOS](https://github.com/contd/kube-cluster-ui/releases/latest)
+- [Linux](https://github.com/contd/kube-cluster-ui/releases/latest)
 - [Latest release](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [Latest `GitHub` Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-- [Latest build Test Reports](https://github.com/contd/kube-cluster-ui/wiki)
+- [Latest GitHub Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+- [Latest build test reports](https://github.com/contd/kube-cluster-ui/wiki)
 
----
+<details>
+<summary>Watch the demo</summary>
 
 [![Kube Cluster UI demo video](docs/video-preview.gif)](docs/video-preview.gif)
+</details>
 
 ## Features
 
-Each entry documents a view covered by a Playwright test. When adding a navigation view, add its test, numbered snapshot, and feature note here.
+Expand a feature to view its Playwright screenshot. The same test suite covers each resource view and key interactions.
 
-- **Dashboard:** Cluster health summary cards, a context-bound command terminal, and kubectl, Docker, and kind availability indicators. <br><img src="docs/snapshots/01-dashboard.png" alt="Dashboard view" width="640">
-- **Nodes:** Node readiness, roles, taints, version, CPU, memory, and age. <br><img src="docs/snapshots/02-nodes.png" alt="Nodes view" width="640">
-- **Namespaces:** Namespace status, age, and label summary. <br><img src="docs/snapshots/03-namespaces.png" alt="Namespaces view" width="640">
-- **Pods:** Container count, phase, restarts, node placement, and controller. <br><img src="docs/snapshots/04-pods.png" alt="Pods view" width="640">
-- **Deployments:** Deployment pod and replica counts. <br><img src="docs/snapshots/05-deployments.png" alt="Deployments view" width="640">
-- **DaemonSets:** Desired, current, ready, updated, and available pod counts. <br><img src="docs/snapshots/06-daemonsets.png" alt="DaemonSets view" width="640">
-- **StatefulSets:** StatefulSet pod and replica counts. <br><img src="docs/snapshots/07-statefulsets.png" alt="StatefulSets view" width="640">
-- **ReplicaSets:** Desired, current, and ready replica counts. <br><img src="docs/snapshots/08-replicasets.png" alt="ReplicaSets view" width="640">
-- **Jobs:** Start and end times, completion, and termination state. <br><img src="docs/snapshots/09-jobs.png" alt="Jobs view" width="640">
-- **CronJobs:** Schedule, suspension, active jobs, and last schedule time. <br><img src="docs/snapshots/10-cronjobs.png" alt="CronJobs view" width="640">
-- **Persistent Volumes:** Storage class, capacity, claim, age, and status. <br><img src="docs/snapshots/11-pvs.png" alt="Persistent Volumes view" width="640">
-- **Storage Classes:** Provisioner, reclaim policy, binding mode, and expansion. <br><img src="docs/snapshots/12-storageclasses.png" alt="Storage Classes view" width="640">
-- **Services:** Service type, cluster IP, and ports. <br><img src="docs/snapshots/13-services.png" alt="Services view" width="640">
-- **Ingresses:** Ingress class and configured hosts. <br><img src="docs/snapshots/14-ingresses.png" alt="Ingresses view" width="640">
-- **ConfigMaps:** Namespaced configuration maps and key counts. <br><img src="docs/snapshots/15-configmaps.png" alt="ConfigMaps view" width="640">
-- **Secrets:** Secret type and key counts. <br><img src="docs/snapshots/16-secrets.png" alt="Secrets view" width="640">
-- **Persistent Volume Claims:** Claim status, capacity, and storage class. <br><img src="docs/snapshots/17-pvcs.png" alt="Persistent Volume Claims view" width="640">
-- **Events:** Event type, reason, involved object, count, and last-seen time. <br><img src="docs/snapshots/18-events.png" alt="Events view" width="640">
-- **Unavailable terminal:** The terminal is dimmed and disabled when kubectl is missing. <br><img src="docs/snapshots/19-kubectl-unavailable.png" alt="Dashboard terminal disabled because kubectl is unavailable" width="640">
-- **Service Accounts:** Namespace-scoped service accounts and secret references. <br><img src="docs/snapshots/20-serviceaccounts.png" alt="Service Accounts view" width="640">
-- **Cluster Roles:** Cluster-wide RBAC roles and rule counts. <br><img src="docs/snapshots/21-clusterroles.png" alt="Cluster Roles view" width="640">
-- **Roles:** Namespace-scoped RBAC roles and rule counts. <br><img src="docs/snapshots/22-roles.png" alt="Roles view" width="640">
-- **Cluster Role Bindings:** Cluster-wide role references and subject counts. <br><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings view" width="640">
-- **Role Bindings:** Namespace-scoped role references and subject counts. <br><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings view" width="640">
-- **Service Accounts:** Namespace-scoped service accounts and secret references. <br><img src="docs/snapshots/20-serviceaccounts.png" alt="Service Accounts view" width="640">
-- **Cluster Roles:** Cluster-wide RBAC roles and rule counts. <br><img src="docs/snapshots/21-clusterroles.png" alt="Cluster Roles view" width="640">
-- **Roles:** Namespace-scoped RBAC roles and rule counts. <br><img src="docs/snapshots/22-roles.png" alt="Roles view" width="640">
-- **Cluster Role Bindings:** Cluster-wide role references and subject counts. <br><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings view" width="640">
-- **Role Bindings:** Namespace-scoped role references and subject counts. <br><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings view" width="640">
-- **Settings:** Editable kubeconfig search path and detected CLI executable locations. <br><img src="docs/snapshots/25-settings.png" alt="Settings view with kubeconfig path and CLI locations" width="640">
-- **Saved kubeconfigs:** Edit and save kubeconfig documents previously pasted from the Cluster menu. <br><img src="docs/snapshots/26-settings-saved-kubeconfigs.png" alt="Settings view with an editable saved kubeconfig" width="640">
+- **Dashboard:** Cluster health summaries, context-aware kubectl terminal, and CLI availability.
+	<details><summary>View Dashboard screenshot</summary><img src="docs/snapshots/01-dashboard.png" alt="Dashboard with health summaries and terminal" width="640"></details>
+- **Nodes:** Readiness, roles, taints, Kubernetes version, CPU, memory, and age.
+	<details><summary>View Nodes screenshot</summary><img src="docs/snapshots/02-nodes.png" alt="Nodes resource view" width="640"></details>
+- **Namespaces:** Namespace status, age, and label summary.
+	<details><summary>View Namespaces screenshot</summary><img src="docs/snapshots/03-namespaces.png" alt="Namespaces resource view" width="640"></details>
+- **Pods:** Container count, phase, restarts, node placement, and controller.
+	<details><summary>View Pods screenshot</summary><img src="docs/snapshots/04-pods.png" alt="Pods resource view" width="640"></details>
+- **Deployments:** Workload pods and replica counts.
+	<details><summary>View Deployments screenshot</summary><img src="docs/snapshots/05-deployments.png" alt="Deployments resource view" width="640"></details>
+- **DaemonSets:** Desired, current, ready, updated, and available pod counts.
+	<details><summary>View DaemonSets screenshot</summary><img src="docs/snapshots/06-daemonsets.png" alt="DaemonSets resource view" width="640"></details>
+- **StatefulSets:** StatefulSet pods and replica counts.
+	<details><summary>View StatefulSets screenshot</summary><img src="docs/snapshots/07-statefulsets.png" alt="StatefulSets resource view" width="640"></details>
+- **ReplicaSets:** Desired, current, and ready replicas.
+	<details><summary>View ReplicaSets screenshot</summary><img src="docs/snapshots/08-replicasets.png" alt="ReplicaSets resource view" width="640"></details>
+- **Jobs:** Start and end times, completion, and termination state.
+	<details><summary>View Jobs screenshot</summary><img src="docs/snapshots/09-jobs.png" alt="Jobs resource view" width="640"></details>
+- **CronJobs:** Schedule, suspension, active jobs, and last schedule time.
+	<details><summary>View CronJobs screenshot</summary><img src="docs/snapshots/10-cronjobs.png" alt="CronJobs resource view" width="640"></details>
+- **Persistent Volumes:** Storage class, capacity, claim, age, and status.
+	<details><summary>View Persistent Volumes screenshot</summary><img src="docs/snapshots/11-pvs.png" alt="Persistent Volumes resource view" width="640"></details>
+- **Storage Classes:** Provisioner, reclaim policy, binding mode, and expansion.
+	<details><summary>View Storage Classes screenshot</summary><img src="docs/snapshots/12-storageclasses.png" alt="Storage Classes resource view" width="640"></details>
+- **Services:** Service type, cluster IP, and ports.
+	<details><summary>View Services screenshot</summary><img src="docs/snapshots/13-services.png" alt="Services resource view" width="640"></details>
+- **Ingresses:** Ingress class and configured hosts.
+	<details><summary>View Ingresses screenshot</summary><img src="docs/snapshots/14-ingresses.png" alt="Ingresses resource view" width="640"></details>
+- **ConfigMaps:** Namespaced configuration and key counts.
+	<details><summary>View ConfigMaps screenshot</summary><img src="docs/snapshots/15-configmaps.png" alt="ConfigMaps resource view" width="640"></details>
+- **Secrets:** Secret type and key counts.
+	<details><summary>View Secrets screenshot</summary><img src="docs/snapshots/16-secrets.png" alt="Secrets resource view" width="640"></details>
+- **Persistent Volume Claims:** Claim status, capacity, and storage class.
+	<details><summary>View Persistent Volume Claims screenshot</summary><img src="docs/snapshots/17-pvcs.png" alt="Persistent Volume Claims resource view" width="640"></details>
+- **Events:** Event type, reason, involved object, count, and last seen.
+	<details><summary>View Events screenshot</summary><img src="docs/snapshots/18-events.png" alt="Events resource view" width="640"></details>
+- **Unavailable terminal:** The terminal is disabled when kubectl is unavailable.
+	<details><summary>View unavailable terminal screenshot</summary><img src="docs/snapshots/19-kubectl-unavailable.png" alt="Dashboard terminal disabled because kubectl is unavailable" width="640"></details>
+- **Service Accounts:** Namespaced service accounts and secret references.
+	<details><summary>View Service Accounts screenshot</summary><img src="docs/snapshots/20-serviceaccounts.png" alt="Service Accounts resource view" width="640"></details>
+- **Cluster Roles:** Cluster-wide RBAC roles and rule counts.
+	<details><summary>View Cluster Roles screenshot</summary><img src="docs/snapshots/21-clusterroles.png" alt="Cluster Roles resource view" width="640"></details>
+- **Roles:** Namespaced RBAC roles and rule counts.
+	<details><summary>View Roles screenshot</summary><img src="docs/snapshots/22-roles.png" alt="Roles resource view" width="640"></details>
+- **Cluster Role Bindings:** Cluster-wide role references and subject counts.
+	<details><summary>View Cluster Role Bindings screenshot</summary><img src="docs/snapshots/23-clusterrolebindings.png" alt="Cluster Role Bindings resource view" width="640"></details>
+- **Role Bindings:** Namespaced role references and subject counts.
+	<details><summary>View Role Bindings screenshot</summary><img src="docs/snapshots/24-rolebindings.png" alt="Role Bindings resource view" width="640"></details>
+- **Settings:** Kubeconfig search path and detected CLI executable locations.
+	<details><summary>View Settings screenshot</summary><img src="docs/snapshots/25-settings.png" alt="Settings view with kubeconfig path and CLI locations" width="640"></details>
+- **Saved kubeconfigs:** Edit previously pasted kubeconfig documents.
+	<details><summary>View saved kubeconfigs screenshot</summary><img src="docs/snapshots/26-settings-saved-kubeconfigs.png" alt="Settings view with an editable saved kubeconfig" width="640"></details>
 
 ---
 

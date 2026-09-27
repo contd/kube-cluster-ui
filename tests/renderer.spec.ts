@@ -432,7 +432,7 @@ test.describe('Kube Cluster UI views', () => {
       const toggle = group.locator('.nav-group-toggle');
       const content = group.locator('.nav-group-content');
       const groupName = await toggle.locator('span').innerText();
-      const startsExpanded = !['Configuration', 'Storage', 'Observability'].includes(groupName);
+      const startsExpanded = !['Configuration', 'Storage', 'Observability', 'Access Control'].includes(groupName);
 
       await expect(toggle).toHaveAttribute('aria-expanded', String(startsExpanded));
       if (startsExpanded) {

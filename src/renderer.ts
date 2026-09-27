@@ -47,7 +47,7 @@ const app = document.querySelector<HTMLDivElement>('#app');
 const state = {
   selectedKind: 'pods' as ResourceKind,
   selectedResourceId: '',
-  collapsedNavGroups: { Configuration: true, Storage: true, Observability: true } as Record<string, boolean>,
+  collapsedNavGroups: { Configuration: true, Storage: true, Observability: true, 'Access Control': true } as Record<string, boolean>,
   kubectlInput: '',
   kubectlHistory: [] as string[],
   kubectlResult: null as (KubectlResult & { command: string }) | null,

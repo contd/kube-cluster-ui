@@ -1,4 +1,4 @@
 import { defineConfig } from 'vite';
 
-// https://vitejs.dev/config
+/** Vite configuration for the Electron preload bundle. */
 export default defineConfig({});

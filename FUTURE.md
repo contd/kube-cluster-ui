@@ -1,24 +1,71 @@
 # Future Features and Direction of this Application
 
-I. `Settings Page` Expanded
-  a. Left hand nav of sections (like tabs)
-  b. General: shows kubectl path and shows and allows editing path where kubeconfigs are loaded from
-  c. Helm: shows path to helm and allow add/edit/del helm repos
-II. `Custom Resources Definitions` Section
-  a. At bottom of nav and unexpanded by default
-III. `Terminal Output` Expanded
-  a. Persistent Storage
-  b. Panel Pullup
-  c. `json` Output Tab
-IV. `Inspector` Reformat
-  a. Expanded with Plots/Graphs of Metrics/Statuses
-V. `KubeConfig` checks with EKS/AWS and without awscli
-VI. `Dashboard` Reformat
-  a. Fix 4 Summary Cards and Add more
-  b. Add Plots/Graphs
-  c. Tab of 3 views to switch
-    1. Helm Releases
-    2. Events
-    3. Info - pull down README.md >> HTML rendered.
-VII. `Figma` Design of the current `index.css` and Layouts
-  a. Import with ChatGPT the index.css, rendererer.ts and etc.
+## Table of Contents
+
+- [I. Settings Page Expanded](#i-settings-page-expanded)
+  - Left-hand navigation of sections (like tabs)
+  - General: show the kubectl path and allow editing where kubeconfig files are loaded from
+  - Helm: show the Helm path and allow adding, editing, and deleting Helm repositories
+- [II. Custom Resources Definitions Section](#ii-custom-resources-definitions-section)
+  - At the bottom of navigation and collapsed by default
+- [III. Terminal Output Expanded](#iii-terminal-output-expanded)
+  - Panel pull-up
+  - JSON output tab
+  - Persistent storage
+- [IV. Inspector Reformat](#iv-inspector-reformat)
+  - Expanded view with plots and graphs of metrics and statuses
+- [V. KubeConfig Checks with EKS/AWS and without awscli](#v-kubeconfig-checks-with-eksaws-and-without-awscli)
+- [VI. Dashboard Reformat](#vi-dashboard-reformat)
+  - Fix the four summary cards and add more
+  - Add plots and graphs
+  - Add tabs for Helm Releases, Events, and Info (render README.md as HTML)
+- [VII. Helm Section Added to Navigation](#vii-helm-section-added-to-navigation)
+  - Releases view
+  - Repositories view
+- [VIII. Documentation Site](#viii-documentation-site)
+  - Use README.md as the cover and Markdown files in docs as pages
+  - Generate and publish the GitHub Pages site in the release workflow
+- [IX. Web Server Build](#ix-web-server-build)
+  - Add to this project a build output that can be packaged to be deployed as a web based app utilizing express or something simpler
+
+## I. Settings Page Expanded
+
+- Left-hand navigation of sections (like tabs)
+- General: show the kubectl path and allow editing where kubeconfig files are loaded from
+- Helm: show the Helm path and allow adding, editing, and deleting Helm repositories
+
+## II. Custom Resources Definitions Section
+
+- At the bottom of navigation and collapsed by default
+
+## III. Terminal Output Expanded
+
+- Panel pull-up
+- JSON output tab
+- Persistent storage
+
+## IV. Inspector Reformat
+
+- Expanded view with plots and graphs of metrics and statuses
+
+## V. KubeConfig Checks with EKS/AWS and without awscli
+
+## VI. Dashboard Reformat
+
+- Fix the four summary cards and add more
+- Add plots and graphs
+- Add tabs for Helm Releases, Events, and Info (render README.md as HTML)
+
+## VII. Helm Section Added to Navigation
+
+- Releases view
+- Repositories view
+
+## VIII. Documentation Site
+
+- Use README.md as the cover and Markdown files in docs as pages
+- Generate and publish the GitHub Pages site in the release workflow
+
+## IX. Web Server Build
+
+- Add to this project a build output that can be packaged to be deployed as a web based app utilizing express or something simpler

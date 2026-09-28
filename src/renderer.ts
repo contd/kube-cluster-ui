@@ -1,3 +1,4 @@
+/** Renderer entry point for Kubernetes views, resource helpers, and dashboard interactions. */
 import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
 import * as dataplane from './dataplane';
@@ -50,7 +51,10 @@ const state = {
   collapsedNavGroups: { Configuration: true, Storage: true, Observability: true, 'Access Control': true } as Record<string, boolean>,
   kubectlInput: '',
   kubectlHistory: [] as string[],
-  kubectlResult: null as (KubectlResult & { command: string }) | null,
+  kubectlResult: null as (KubectlResult & {
+    /** Command text associated with the displayed result. */
+    command: string;
+  }) | null,
   kubectlError: '',
   kubectlRunning: false,
   kubectlRequestId: 0,
@@ -82,21 +86,30 @@ const state = {
   kubeconfigDrafts: {} as Record<string, string>,
 };
 
-/** Applies the selected theme to the document and persists it for the next launch. */
+/**
+ * Applies the selected theme to the document and persists it for the next launch.
+ * @param theme - Theme mode to apply and save.
+ */
 function applyTheme(theme: Theme): void {
   state.theme = theme;
   document.documentElement.dataset.theme = theme;
   localStorage.setItem('kube-cluster-ui-theme', theme);
 }
 
-/** Applies the density mode to the document and persists the user's display preference. */
+/**
+ * Applies the density mode to the document and persists the user's display preference.
+ * @param density - Density preset to apply and save.
+ */
 function applyDensity(density: Density): void {
   state.density = density;
   document.documentElement.dataset.density = density;
   localStorage.setItem('kube-cluster-ui-density', density);
 }
 
-/** Clears terminal output and prevents any in-flight command from restoring stale results. */
+/**
+ * Clears terminal output and prevents any in-flight command from restoring stale results.
+ * @returns Nothing; invalidates pending command responses and clears result state.
+ */
 function clearKubectlOutput(): void {
   state.kubectlRequestId += 1;
   state.kubectlResult = null;
@@ -104,7 +117,10 @@ function clearKubectlOutput(): void {
   state.kubectlRunning = false;
 }
 
-/** Scrolls the command log to the newest entry after a submitted command renders. */
+/**
+ * Scrolls the command log to the newest entry after a submitted command renders.
+ * @returns Nothing; updates the terminal history scroll position when present.
+ */
 function scrollKubectlHistoryToBottom(): void {
   const history = document.querySelector<HTMLElement>('.kubectl-terminal-screen');
   if (history) {
@@ -112,7 +128,12 @@ function scrollKubectlHistoryToBottom(): void {
   }
 }
 
-/** Walks a nested Kubernetes object safely and returns the value at the requested path. */
+/**
+ * Walks a nested Kubernetes object safely and returns the value at the requested path.
+ * @param value - Root object to inspect.
+ * @param path - Ordered property names leading to the value.
+ * @returns Nested value, or `undefined` when a segment is unavailable.
+ */
 export function objectValue(
   value: Record<string, unknown> | undefined,
   path: string[],
@@ -126,7 +147,12 @@ export function objectValue(
   }, value);
 }
 
-/** Converts API values into display text while normalizing missing and array values. */
+/**
+ * Converts API values into display text while normalizing missing and array values.
+ * @param value - API value to convert.
+ * @param fallback - Text used for nullish or empty input.
+ * @returns A display-safe string.
+ */
 export function stringValue(value: unknown, fallback = '-'): string {
   if (value === undefined || value === null || value === '') {
     return fallback;
@@ -139,12 +165,20 @@ export function stringValue(value: unknown, fallback = '-'): string {
   return String(value);
 }
 
-/** Returns resource metadata or an empty object so callers can render incomplete API data safely. */
+/**
+ * Returns resource metadata or an empty object so callers can render incomplete API data safely.
+ * @param resource - Kubernetes resource to inspect.
+ * @returns Resource metadata, or an empty object when metadata is absent.
+ */
 export function metadata(resource: KubeResource): Metadata {
   return resource.metadata || {};
 }
 
-/** Resolves the human-readable name, preferring an Event's involved object when available. */
+/**
+ * Resolves the human-readable name, preferring an Event's involved object when available.
+ * @param resource - Kubernetes resource to name.
+ * @returns The resource name or `-` when no name is available.
+ */
 export function resourceName(resource: KubeResource): string {
   if (resource.kind === 'Event') {
     return resource.involvedObject?.name || metadata(resource).name || '-';
@@ -153,7 +187,11 @@ export function resourceName(resource: KubeResource): string {
   return metadata(resource).name || '-';
 }
 
-/** Resolves a resource namespace and supplies cluster/default fallbacks for unscoped resources. */
+/**
+ * Resolves a resource namespace and supplies cluster/default fallbacks for unscoped resources.
+ * @param resource - Kubernetes resource whose namespace is requested.
+ * @returns Namespace, `cluster` for Nodes, or `default` as a fallback.
+ */
 export function resourceNamespace(resource: KubeResource): string {
   return (
     metadata(resource).namespace ||
@@ -162,12 +200,20 @@ export function resourceNamespace(resource: KubeResource): string {
   );
 }
 
-/** Builds the stable namespace/name key used to select a resource in the inspector. */
+/**
+ * Builds the stable namespace/name key used to select a resource in the inspector.
+ * @param resource - Kubernetes resource to identify.
+ * @returns Stable `namespace:name` identity.
+ */
 export function resourceId(resource: KubeResource): string {
   return `${resourceNamespace(resource)}:${metadata(resource).name || resourceName(resource)}`;
 }
 
-/** Formats an ISO timestamp as a compact elapsed time suitable for table cells. */
+/**
+ * Formats an ISO timestamp as a compact elapsed time suitable for table cells.
+ * @param isoDate - Timestamp to measure from, when present.
+ * @returns Elapsed time in minutes, hours, or days, or `-` when absent.
+ */
 export function age(isoDate?: string): string {
   if (!isoDate) {
     return '-';
@@ -189,7 +235,11 @@ export function age(isoDate?: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-/** Counts ready pod containers and formats the result as ready/total. */
+/**
+ * Counts ready pod containers and formats the result as ready/total.
+ * @param resource - Pod resource whose container statuses are counted.
+ * @returns Ready/total count, or `-` when statuses are unavailable.
+ */
 export function podReady(resource: KubeResource): string {
   const statuses = objectValue(resource.status, ['containerStatuses']);
   if (!Array.isArray(statuses)) {
@@ -203,7 +253,11 @@ export function podReady(resource: KubeResource): string {
   return `${ready}/${statuses.length}`;
 }
 
-/** Reads workload replica counts from status/spec and formats them as ready/desired. */
+/**
+ * Reads workload replica counts from status/spec and formats them as ready/desired.
+ * @param resource - Workload resource whose replica counts are read.
+ * @returns Ready and desired replicas in `ready/desired` form.
+ */
 export function workloadReady(resource: KubeResource): string {
   const ready = stringValue(objectValue(resource.status, ['readyReplicas']), '0');
   const desired = stringValue(
@@ -215,7 +269,11 @@ export function workloadReady(resource: KubeResource): string {
   return `${ready}/${desired}`;
 }
 
-/** Interprets a node's Ready condition as the status text shown in the UI. */
+/**
+ * Interprets a node's Ready condition as the status text shown in the UI.
+ * @param resource - Node resource whose conditions are inspected.
+ * @returns `Ready`, `NotReady`, or `Unknown` when conditions are unavailable.
+ */
 export function nodePressure(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
   if (!Array.isArray(conditions)) {
@@ -230,7 +288,12 @@ export function nodePressure(resource: KubeResource): string {
   return ready?.status === 'True' ? 'Ready' : 'NotReady';
 }
 
-/** Selects the status field appropriate to each Kubernetes resource category. */
+/**
+ * Selects the status field appropriate to each Kubernetes resource category.
+ * @param resource - Kubernetes resource whose status is displayed.
+ * @param kind - Resource kind selecting the status interpretation.
+ * @returns Normalized status text for the requested resource kind.
+ */
 export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   if (kind === 'pods') {
     return stringValue(objectValue(resource.status, ['phase']));
@@ -267,7 +330,12 @@ export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   return stringValue(objectValue(resource.spec, ['type']));
 }
 
-/** Maps a resource status to the semantic color tone used by badges and status dots. */
+/**
+ * Maps a resource status to the semantic color tone used by badges and status dots.
+ * @param resource - Kubernetes resource whose status is classified.
+ * @param kind - Resource kind selecting the status interpretation.
+ * @returns Semantic status tone for the resource.
+ */
 export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
   const status = statusFor(resource, kind).toLowerCase();
 
@@ -305,7 +373,11 @@ export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTo
   return 'neutral';
 }
 
-/** Defines the table columns and value readers for a resource category. */
+/**
+ * Defines the table columns and value readers for a resource category.
+ * @param kind - Resource kind whose table schema is requested.
+ * @returns Ordered column definitions for the resource table.
+ */
 export function columnsFor(kind: ResourceKind): Column[] {
   const common: Column[] = [
     { label: 'Namespace', value: resourceNamespace },
@@ -589,7 +661,11 @@ export function columnsFor(kind: ResourceKind): Column[] {
   ];
 }
 
-/** Escapes untrusted Kubernetes values before inserting them into HTML strings. */
+/**
+ * Escapes untrusted Kubernetes values before inserting them into HTML strings.
+ * @param value - Untrusted text to escape.
+ * @returns HTML-safe text.
+ */
 export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => {
     const entities: Record<string, string> = {
@@ -604,7 +680,11 @@ export function escapeHtml(value: string): string {
   });
 }
 
-/** Builds a sanitized YAML manifest, omitting server-managed metadata before display/copy. */
+/**
+ * Builds a sanitized YAML manifest, omitting server-managed metadata before display/copy.
+ * @param resource - Kubernetes resource to serialize.
+ * @returns YAML with server-managed `metadata.managedFields` removed.
+ */
 export function formatManifest(resource: KubeResource): string {
   const manifest = {
     apiVersion: resource.apiVersion ?? 'v1',
@@ -620,6 +700,7 @@ export function formatManifest(resource: KubeResource): string {
       ),
     ),
   } as Record<string, unknown> & {
+    /** Resource metadata copied into the sanitized manifest. */
     metadata: Record<string, unknown>;
   };
 
@@ -628,7 +709,11 @@ export function formatManifest(resource: KubeResource): string {
   return YAML.stringify(manifest);
 }
 
-/** Adds lightweight syntax classes to escaped YAML for the manifest preview. */
+/**
+ * Adds lightweight syntax classes to escaped YAML for the manifest preview.
+ * @param yaml - YAML source text to highlight.
+ * @returns Escaped HTML markup with YAML syntax classes.
+ */
 export function highlightYaml(yaml: string): string {
   return yaml
     .split('\n')
@@ -653,7 +738,11 @@ export function highlightYaml(yaml: string): string {
     .join('\n');
 }
 
-/** Highlights JSON, Kubernetes YAML, table headers, and common status values. */
+/**
+ * Highlights JSON, Kubernetes YAML, table headers, and common status values.
+ * @param output - Raw stdout/stderr text from a kubectl invocation.
+ * @returns Escaped and syntax-highlighted HTML for the output pane.
+ */
 export function highlightKubectlOutput(output: string): string {
   const trimmed = output.trim();
   if (!trimmed) {
@@ -705,7 +794,10 @@ export function highlightKubectlOutput(output: string): string {
   );
 }
 
-/** Rebuilds the active dashboard or about view and reconnects its DOM event handlers. */
+/**
+ * Rebuilds the active dashboard or custom view and reconnects its DOM event handlers.
+ * @returns Nothing; replaces the application root with the active view markup.
+ */
 function render() {
   if (!app) {
     return;
@@ -962,7 +1054,10 @@ function render() {
   bindEvents();
 }
 
-/** Produces the static about-page markup from the asynchronously loaded application metadata. */
+/**
+ * Produces the About-page markup from asynchronously loaded application metadata.
+ * @returns About-view HTML, or a loading placeholder while metadata is unavailable.
+ */
 function renderAbout(): string {
   const about = state.about;
   if (!about) {
@@ -990,7 +1085,10 @@ function renderAbout(): string {
   `;
 }
 
-/** Connects the about-page navigation control back to the dashboard. */
+/**
+ * Connects the About-page navigation control back to the dashboard.
+ * @returns Nothing; registers the back-button event handler.
+ */
 function bindAboutEvents(): void {
   document.querySelector<HTMLButtonElement>('#about-back')?.addEventListener('click', () => {
     state.view = 'dashboard';
@@ -998,7 +1096,10 @@ function bindAboutEvents(): void {
   });
 }
 
-/** Renders the editable kubeconfig search path and read-only CLI executable paths. */
+/**
+ * Renders the editable kubeconfig search path and read-only CLI executable paths.
+ * @returns Settings-view HTML, including saved kubeconfig editors and status messages.
+ */
 function renderSettings(): string {
   const cliPaths = state.cliToolsAvailability
     ? (['docker', 'kind', 'kubectl'] as const)
@@ -1058,7 +1159,10 @@ function renderSettings(): string {
   `;
 }
 
-/** Loads persisted settings and opens the custom Settings view. */
+/**
+ * Loads persisted settings and opens the custom Settings view.
+ * @returns A promise that resolves after settings data has loaded and the view rerenders.
+ */
 async function openSettings(): Promise<void> {
   state.view = 'settings';
   state.settingsLoading = true;
@@ -1088,7 +1192,10 @@ async function openSettings(): Promise<void> {
   }
 }
 
-/** Connects Settings navigation and persists changed kubeconfig discovery paths. */
+/**
+ * Connects Settings navigation and persists changed kubeconfig discovery paths.
+ * @returns Nothing; registers editor, save, and close event handlers.
+ */
 function bindSettingsEvents(): void {
   const closeSettings = () => {
     state.view = 'dashboard';
@@ -1196,7 +1303,10 @@ function bindSettingsEvents(): void {
   });
 }
 
-/** Switches to the about view, loads metadata through preload, and falls back gracefully. */
+/**
+ * Switches to the About view, loads metadata through preload, and falls back gracefully.
+ * @returns A promise that resolves after metadata loading and the view rerender.
+ */
 async function openAbout(): Promise<void> {
   state.view = 'about';
   state.about = null;
@@ -1223,7 +1333,10 @@ async function openAbout(): Promise<void> {
   }
 }
 
-/** Converts the current health summary into the four dashboard summary cards. */
+/**
+ * Converts the current health summary into the four dashboard summary cards.
+ * @returns Dashboard summary-grid HTML.
+ */
 function renderSummary(): string {
   const summary = dataplane.healthSummary(state.snapshot);
   const podPercent = summary.pods.length
@@ -1246,7 +1359,10 @@ function renderSummary(): string {
   `;
 }
 
-/** Renders the context-bound command prompt and its syntax-highlighted output. */
+/**
+ * Renders the context-bound command prompt and its syntax-highlighted output.
+ * @returns Terminal and output-pane HTML for the dashboard.
+ */
 function renderKubectlTerminal(): string {
   const kubectlDisabled = state.cliToolsAvailability?.kubectl.available !== true;
   const selectedContext = state.contexts.find(
@@ -1337,7 +1453,15 @@ function renderKubectlTerminal(): string {
   `;
 }
 
-/** Renders one metric card with a bounded progress meter and semantic tone. */
+/**
+ * Renders one metric card with a bounded progress meter and semantic tone.
+ * @param title - Metric label shown in the card.
+ * @param value - Primary metric value.
+ * @param percent - Progress value clamped to the inclusive range 0–100.
+ * @param icon - Lucide icon name displayed with the title.
+ * @param tone - Semantic status tone applied to the card.
+ * @returns Metric-card HTML.
+ */
 function summaryCard(
   title: string,
   value: string,
@@ -1359,7 +1483,11 @@ function summaryCard(
   `;
 }
 
-/** Sorts visible resources and renders the resource table, including selection/status state. */
+/**
+ * Sorts visible resources and renders the resource table, including selection/status state.
+ * @param resources - Filtered resources to display in the active table.
+ * @returns Resource-table or empty-state HTML.
+ */
 function renderTable(resources: KubeResource[]): string {
   const columns = columnsFor(state.selectedKind);
   const sortableColumns = [
@@ -1456,7 +1584,11 @@ function renderTable(resources: KubeResource[]): string {
   `;
 }
 
-/** Renders the selected resource's facts, labels, event message, and YAML manifest. */
+/**
+ * Renders the selected resource's facts, labels, event message, and YAML manifest.
+ * @param resource - Selected resource, when one is present.
+ * @returns Inspector HTML, or an empty string when no resource is selected.
+ */
 function renderInspector(resource: KubeResource | undefined): string {
   if (!resource) {
     return '';
@@ -1516,7 +1648,11 @@ function renderInspector(resource: KubeResource | undefined): string {
   `;
 }
 
-/** Produces the optional event message section for the inspector. */
+/**
+ * Produces the optional Event message section for the inspector.
+ * @param resource - Event resource whose message is displayed.
+ * @returns Escaped Event message section HTML.
+ */
 function renderEventMessage(resource: KubeResource): string {
   return `
     <section class="detail-section">
@@ -1526,7 +1662,12 @@ function renderEventMessage(resource: KubeResource): string {
   `;
 }
 
-/** Renders one label/value pair in the inspector facts grid. */
+/**
+ * Renders one label/value pair in the inspector facts grid.
+ * @param label - Fact name displayed to the user.
+ * @param value - Fact value displayed beside its name.
+ * @returns Fact-row HTML.
+ */
 function fact(label: string, value: string): string {
   return `
     <div class="fact">
@@ -1541,7 +1682,10 @@ export const kindLabel = dataplane.kindLabel;
 /** Re-exports the data-plane context label resolver for existing renderer consumers. */
 export const contextLabel = dataplane.contextLabel;
 
-/** Wires all dashboard controls to state updates, data loading, selection, and clipboard actions. */
+/**
+ * Wires dashboard controls to state updates, data loading, selection, and clipboard actions.
+ * @returns Nothing; attaches event handlers to the currently rendered dashboard.
+ */
 function bindEvents() {
   document.querySelector<HTMLButtonElement>('#open-settings')?.addEventListener('click', () => {
     void openSettings();
@@ -1829,7 +1973,10 @@ function bindEvents() {
   });
 }
 
-/** Checks local CLI availability before enabling the Dashboard terminal. */
+/**
+ * Checks local CLI availability before enabling the Dashboard terminal.
+ * @returns A promise that resolves after availability state is updated and rendered.
+ */
 async function checkCliToolsAvailability(): Promise<void> {
   try {
     if (!window.kubeApi?.checkCliTools) {
@@ -1853,7 +2000,10 @@ async function checkCliToolsAvailability(): Promise<void> {
   render();
 }
 
-/** Loads available kubeconfig contexts through preload and selects a sensible default. */
+/**
+ * Loads available kubeconfig contexts through preload and selects a sensible default.
+ * @returns A promise that resolves after context state has been updated.
+ */
 async function loadContexts() {
   try {
     if (!window.kubeApi) {
@@ -1874,7 +2024,10 @@ async function loadContexts() {
   }
 }
 
-/** Fetches the selected namespace snapshot, falling back to demo data on API failure. */
+/**
+ * Fetches the selected namespace snapshot, falling back to demo data on API failure.
+ * @returns A promise that resolves after the snapshot and loading state are updated.
+ */
 async function loadSnapshot() {
   state.loading = true;
   state.error = '';
@@ -1903,7 +2056,11 @@ async function loadSnapshot() {
   }
 }
 
-/** Loads a resource collection on demand and merges it into the current snapshot. */
+/**
+ * Loads a resource collection on demand and merges it into the current snapshot.
+ * @param kind - Resource collection to request.
+ * @returns A promise that resolves after resources and loading state are updated.
+ */
 async function loadResources(kind: ResourceKind): Promise<void> {
   state.loading = true;
   state.error = '';
@@ -1929,7 +2086,10 @@ async function loadResources(kind: ResourceKind): Promise<void> {
   }
 }
 
-/** Creates a complete deterministic-shaped demo snapshot used when kubectl is unavailable. */
+/**
+ * Creates a complete demo snapshot used when kubectl is unavailable.
+ * @returns Snapshot populated with representative Kubernetes resource fixtures.
+ */
 export function createDemoSnapshot(): Snapshot {
   return {
     context: 'kind-prod-east',
@@ -2051,12 +2211,21 @@ export function createDemoSnapshot(): Snapshot {
   };
 }
 
-/** Produces an ISO timestamp relative to now for realistic fixture ages. */
+/**
+ * Produces an ISO timestamp relative to now for realistic fixture ages.
+ * @param hoursOffset - Number of hours from now; negative values represent the past.
+ * @returns ISO-formatted timestamp.
+ */
 export function timestamp(hoursOffset: number): string {
   return new Date(Date.now() + hoursOffset * 60 * 60 * 1000).toISOString();
 }
 
-/** Creates a namespace fixture with standard Kubernetes metadata and an Active phase. */
+/**
+ * Creates a namespace fixture with standard Kubernetes metadata and an Active phase.
+ * @param name - Namespace name.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Namespace resource fixture.
+ */
 export function namespace(name: string, hoursOffset: number): KubeResource {
   return {
     kind: 'Namespace',
@@ -2069,7 +2238,16 @@ export function namespace(name: string, hoursOffset: number): KubeResource {
   };
 }
 
-/** Creates a node fixture with role labels, capacity, version, and a Ready condition. */
+/**
+ * Creates a node fixture with role labels, capacity, version, and a Ready condition.
+ * @param name - Node name.
+ * @param role - Node role label value.
+ * @param version - Kubelet version string.
+ * @param cpu - CPU capacity quantity.
+ * @param memory - Memory capacity quantity.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Node resource fixture.
+ */
 export function node(
   name: string,
   role: string,
@@ -2096,7 +2274,17 @@ export function node(
   };
 }
 
-/** Creates a pod fixture with container readiness, restart counts, and node placement. */
+/**
+ * Creates a pod fixture with container readiness, restart counts, and node placement.
+ * @param namespaceName - Namespace containing the Pod.
+ * @param name - Pod name.
+ * @param phase - Kubernetes Pod phase.
+ * @param ready - Ready/total container count string, such as `2/2`.
+ * @param restarts - Restart count assigned to the first container.
+ * @param nodeName - Node on which the Pod is scheduled.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Pod resource fixture.
+ */
 export function pod(
   namespaceName: string,
   name: string,
@@ -2132,7 +2320,16 @@ export function pod(
   };
 }
 
-/** Creates a Deployment or StatefulSet fixture with replica and availability counters. */
+/**
+ * Creates a Deployment or StatefulSet fixture with replica and availability counters.
+ * @param kind - Workload kind to create.
+ * @param namespaceName - Namespace containing the workload.
+ * @param name - Workload name.
+ * @param replicas - Desired replica count.
+ * @param readyReplicas - Number of replicas currently ready.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Deployment or StatefulSet resource fixture.
+ */
 export function workload(
   kind: 'Deployment' | 'StatefulSet',
   namespaceName: string,
@@ -2159,7 +2356,15 @@ export function workload(
   };
 }
 
-/** Creates a DaemonSet fixture using scheduled and available node counts. */
+/**
+ * Creates a DaemonSet fixture using scheduled and available node counts.
+ * @param namespaceName - Namespace containing the DaemonSet.
+ * @param name - DaemonSet name.
+ * @param desired - Desired node count.
+ * @param available - Number of nodes with an available Pod.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns DaemonSet resource fixture.
+ */
 export function daemonset(
   namespaceName: string,
   name: string,
@@ -2185,7 +2390,16 @@ export function daemonset(
   };
 }
 
-/** Creates a Service fixture from a compact port specification such as 443:32443/TCP. */
+/**
+ * Creates a Service fixture from a compact port specification such as `443:32443/TCP`.
+ * @param namespaceName - Namespace containing the Service.
+ * @param name - Service name.
+ * @param type - Kubernetes Service type.
+ * @param clusterIP - Assigned cluster IP.
+ * @param portSpec - Service port, optional node port, and optional protocol.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Service resource fixture.
+ */
 export function service(
   namespaceName: string,
   name: string,
@@ -2213,7 +2427,15 @@ export function service(
   };
 }
 
-/** Creates an Ingress fixture with its class name and host rules. */
+/**
+ * Creates an Ingress fixture with its class name and host rules.
+ * @param namespaceName - Namespace containing the Ingress.
+ * @param name - Ingress name.
+ * @param ingressClassName - Ingress class name.
+ * @param hosts - Hostnames included in the Ingress rules.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Ingress resource fixture.
+ */
 export function ingress(
   namespaceName: string,
   name: string,
@@ -2236,7 +2458,14 @@ export function ingress(
   };
 }
 
-/** Creates a ConfigMap fixture whose keys contain placeholder managed configuration. */
+/**
+ * Creates a ConfigMap fixture whose keys contain placeholder managed configuration.
+ * @param namespaceName - Namespace containing the ConfigMap.
+ * @param name - ConfigMap name.
+ * @param keys - Data keys to include in the fixture.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns ConfigMap resource fixture.
+ */
 export function configMap(
   namespaceName: string,
   name: string,
@@ -2258,7 +2487,15 @@ export function configMap(
   };
 }
 
-/** Creates a Secret fixture with redacted placeholder values for the requested keys. */
+/**
+ * Creates a Secret fixture with redacted placeholder values for the requested keys.
+ * @param namespaceName - Namespace containing the Secret.
+ * @param name - Secret name.
+ * @param type - Kubernetes Secret type.
+ * @param keys - Data keys to include with redacted placeholder values.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns Secret resource fixture.
+ */
 export function secret(
   namespaceName: string,
   name: string,
@@ -2282,7 +2519,16 @@ export function secret(
   };
 }
 
-/** Creates a persistent volume claim fixture with storage class and capacity information. */
+/**
+ * Creates a PersistentVolumeClaim fixture with storage class and capacity information.
+ * @param namespaceName - Namespace containing the claim.
+ * @param name - Claim name.
+ * @param phase - Kubernetes claim phase.
+ * @param storage - Requested or provisioned storage quantity.
+ * @param storageClassName - StorageClass associated with the claim.
+ * @param hoursOffset - Creation-time offset in hours relative to now.
+ * @returns PersistentVolumeClaim resource fixture.
+ */
 export function pvc(
   namespaceName: string,
   name: string,
@@ -2304,7 +2550,17 @@ export function pvc(
   };
 }
 
-/** Creates an Event fixture tied to a named involved object and recent timestamp. */
+/**
+ * Creates an Event fixture tied to a named involved object and recent timestamp.
+ * @param namespaceName - Namespace containing the Event and involved object.
+ * @param objectName - Name of the involved object.
+ * @param type - Event type, such as Normal or Warning.
+ * @param reason - Kubernetes event reason.
+ * @param message - Human-readable event message.
+ * @param count - Number of occurrences represented by the Event.
+ * @param hoursOffset - Event-time offset in hours relative to now.
+ * @returns Event resource fixture.
+ */
 export function event(
   namespaceName: string,
   objectName: string,

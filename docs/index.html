@@ -1,0 +1,171 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>kube-cluster-ui</title><meta name="description" content="Documentation for kube-cluster-ui"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<div class="tsd-toolbar-contents container"><a href="index.html" class="title">kube-cluster-ui</a>
+<div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
+<ul role="listbox" id="tsd-search-results"></ul>
+<div id="tsd-search-status" aria-live="polite" aria-atomic="true">
+<div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header>
+<div class="container container-main">
+<div class="col-content">
+<div class="tsd-page-title">
+<h1>kube-cluster-ui</h1></div>
+<div class="tsd-panel tsd-typography"><h1 id="kube-cluster-ui" class="tsd-anchor-link">Kube Cluster UI<a href="#kube-cluster-ui" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1>
+<p><a href="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml"><img src="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml/badge.svg" alt="Build and publish desktop binaries"></a>
+<a href="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-windows&amp;label=Windows" alt="Windows build"></a>
+<a href="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-macos&amp;label=macOS" alt="macOS build"></a>
+<a href="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-linux&amp;label=Linux" alt="Linux build"></a></p>
+<p><strong>An open-source desktop workspace for browsing Kubernetes clusters.</strong></p>
+<p>Kubernetes GUI tools can involve trade-offs: some are proprietary or place key workflows behind paid tiers, while others can feel heavier and slower than everyday cluster work needs. Kube Cluster UI aims to make common inspection tasks quick and approachable, with a focused desktop interface for cluster health, workloads, configuration, access control, and events.</p>
+<p>Browse resources, inspect manifests, switch contexts, and run context-bound <code>kubectl</code> commands from one application. The project is built with Electron and TypeScript, and is available for Windows, macOS, and Linux.</p>
+<h2 id="project-support" class="tsd-anchor-link">Project Support<a href="#project-support" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Kube Cluster UI is currently supported by:</p>
+<ul>
+<li>Apex Industrial Technologies</li>
+<li>Veratas Automata</li>
+</ul>
+<h2 id="downloads-and-links" class="tsd-anchor-link">Downloads and Links<a href="#downloads-and-links" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Download the latest packaged release for your platform:</p>
+<ul>
+<li><a href="https://github.com/contd/kube-cluster-ui/releases/latest">Windows</a></li>
+<li><a href="https://github.com/contd/kube-cluster-ui/releases/latest">macOS</a></li>
+<li><a href="https://github.com/contd/kube-cluster-ui/releases/latest">Linux</a></li>
+<li><a href="https://github.com/contd/kube-cluster-ui/releases/latest">Latest release</a></li>
+<li><a href="https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml">Latest GitHub Actions build</a></li>
+<li><a href="https://github.com/contd/kube-cluster-ui/wiki">Latest build test reports</a></li>
+</ul>
+<h2 id="watch-the-demo" class="tsd-anchor-link">Watch the demo<a href="#watch-the-demo" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p><a href="assets/video-preview.gif"><img src="media/video-preview.gif" alt="Kube Cluster UI demo video"></a></p>
+<h2 id="features" class="tsd-anchor-link">Features<a href="#features" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>Expand a feature to view its Playwright screenshot. The same test suite covers each resource view and key interactions.</p>
+<ul>
+<li><strong>Dashboard:</strong> Cluster health summaries, context-aware kubectl terminal, and CLI availability.  <details><summary>View Dashboard screenshot</summary><img src="media/01-dashboard.png" alt="Dashboard with health summaries and terminal" width="640"></details>
+</li>
+<li><strong>Nodes:</strong> Readiness, roles, taints, Kubernetes version, CPU, memory, and age.  <details><summary>View Nodes screenshot</summary><img src="media/02-nodes.png" alt="Nodes resource view" width="640"></details>
+</li>
+<li><strong>Namespaces:</strong> Namespace status, age, and label summary.  <details><summary>View Namespaces screenshot</summary><img src="media/03-namespaces.png" alt="Namespaces resource view" width="640"></details>
+</li>
+<li><strong>Pods:</strong> Container count, phase, restarts, node placement, and controller.  <details><summary>View Pods screenshot</summary><img src="media/04-pods.png" alt="Pods resource view" width="640"></details>
+</li>
+<li><strong>Deployments:</strong> Workload pods and replica counts.  <details><summary>View Deployments screenshot</summary><img src="media/05-deployments.png" alt="Deployments resource view" width="640"></details>
+</li>
+<li><strong>DaemonSets:</strong> Desired, current, ready, updated, and available pod counts.  <details><summary>View DaemonSets screenshot</summary><img src="media/06-daemonsets.png" alt="DaemonSets resource view" width="640"></details>
+</li>
+<li><strong>StatefulSets:</strong> StatefulSet pods and replica counts.  <details><summary>View StatefulSets screenshot</summary><img src="media/07-statefulsets.png" alt="StatefulSets resource view" width="640"></details>
+</li>
+<li><strong>ReplicaSets:</strong> Desired, current, and ready replicas.  <details><summary>View ReplicaSets screenshot</summary><img src="media/08-replicasets.png" alt="ReplicaSets resource view" width="640"></details>
+</li>
+<li><strong>Jobs:</strong> Start and end times, completion, and termination state.  <details><summary>View Jobs screenshot</summary><img src="media/09-jobs.png" alt="Jobs resource view" width="640"></details>
+</li>
+<li><strong>CronJobs:</strong> Schedule, suspension, active jobs, and last schedule time.  <details><summary>View CronJobs screenshot</summary><img src="media/10-cronjobs.png" alt="CronJobs resource view" width="640"></details>
+</li>
+<li><strong>Persistent Volumes:</strong> Storage class, capacity, claim, age, and status.  <details><summary>View Persistent Volumes screenshot</summary><img src="media/11-pvs.png" alt="Persistent Volumes resource view" width="640"></details>
+</li>
+<li><strong>Storage Classes:</strong> Provisioner, reclaim policy, binding mode, and expansion.  <details><summary>View Storage Classes screenshot</summary><img src="media/12-storageclasses.png" alt="Storage Classes resource view" width="640"></details>
+</li>
+<li><strong>Services:</strong> Service type, cluster IP, and ports.  <details><summary>View Services screenshot</summary><img src="media/13-services.png" alt="Services resource view" width="640"></details>
+</li>
+<li><strong>Ingresses:</strong> Ingress class and configured hosts.  <details><summary>View Ingresses screenshot</summary><img src="media/14-ingresses.png" alt="Ingresses resource view" width="640"></details>
+</li>
+<li><strong>ConfigMaps:</strong> Namespaced configuration and key counts.  <details><summary>View ConfigMaps screenshot</summary><img src="media/15-configmaps.png" alt="ConfigMaps resource view" width="640"></details>
+</li>
+<li><strong>Secrets:</strong> Secret type and key counts.  <details><summary>View Secrets screenshot</summary><img src="media/16-secrets.png" alt="Secrets resource view" width="640"></details>
+</li>
+<li><strong>Persistent Volume Claims:</strong> Claim status, capacity, and storage class.  <details><summary>View Persistent Volume Claims screenshot</summary><img src="media/17-pvcs.png" alt="Persistent Volume Claims resource view" width="640"></details>
+</li>
+<li><strong>Events:</strong> Event type, reason, involved object, count, and last seen.  <details><summary>View Events screenshot</summary><img src="media/18-events.png" alt="Events resource view" width="640"></details>
+</li>
+<li><strong>Unavailable terminal:</strong> The terminal is disabled when kubectl is unavailable.  <details><summary>View unavailable terminal screenshot</summary><img src="media/19-kubectl-unavailable.png" alt="Dashboard terminal disabled because kubectl is unavailable" width="640"></details>
+</li>
+<li><strong>Service Accounts:</strong> Namespaced service accounts and secret references.  <details><summary>View Service Accounts screenshot</summary><img src="media/20-serviceaccounts.png" alt="Service Accounts resource view" width="640"></details>
+</li>
+<li><strong>Cluster Roles:</strong> Cluster-wide RBAC roles and rule counts.  <details><summary>View Cluster Roles screenshot</summary><img src="media/21-clusterroles.png" alt="Cluster Roles resource view" width="640"></details>
+</li>
+<li><strong>Roles:</strong> Namespaced RBAC roles and rule counts.  <details><summary>View Roles screenshot</summary><img src="media/22-roles.png" alt="Roles resource view" width="640"></details>
+</li>
+<li><strong>Cluster Role Bindings:</strong> Cluster-wide role references and subject counts.  <details><summary>View Cluster Role Bindings screenshot</summary><img src="media/23-clusterrolebindings.png" alt="Cluster Role Bindings resource view" width="640"></details>
+</li>
+<li><strong>Role Bindings:</strong> Namespaced role references and subject counts.  <details><summary>View Role Bindings screenshot</summary><img src="media/24-rolebindings.png" alt="Role Bindings resource view" width="640"></details>
+</li>
+<li><strong>Settings:</strong> Kubeconfig search path and detected CLI executable locations.  <details><summary>View Settings screenshot</summary><img src="media/25-settings.png" alt="Settings view with kubeconfig path and CLI locations" width="640"></details>
+</li>
+<li><strong>Saved kubeconfigs:</strong> Edit previously pasted kubeconfig documents.  <details><summary>View saved kubeconfigs screenshot</summary><img src="media/26-settings-saved-kubeconfigs.png" alt="Settings view with an editable saved kubeconfig" width="640"></details>
+</li>
+</ul>
+<hr>
+<h2 id="development" class="tsd-anchor-link">Development<a href="#development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<blockquote>
+<p>For windows users see <a href="media/WIN-BUILD.md">WIN-BUILD.md</a>.</p>
+</blockquote>
+<h3 id="install-dependencies" class="tsd-anchor-link">Install dependencies<a href="#install-dependencies" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>From the project root:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span>
+</code><button type="button">Copy</button></pre>
+
+<p>If you are using a fresh checkout and the dependency tree is not yet restored, this will install Electron, Vite, and the Forge makers used by the project.</p>
+<p>The project omits optional native WebSocket accelerators such as <code>bufferutil</code> and <code>utf-8-validate</code>. Kubernetes client-node uses <code>ws</code>, which automatically falls back to its JavaScript implementation, avoiding native addon compilation problems on Windows 11.</p>
+<h3 id="run-locally-during-development" class="tsd-anchor-link">Run locally during development<a href="#run-locally-during-development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">start</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This starts the Electron app in development mode.</p>
+<h3 id="run-playwright-ui-tests" class="tsd-anchor-link">Run Playwright UI tests<a href="#run-playwright-ui-tests" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Install the Playwright browser once, then run the UI tests:</p>
+<pre><code class="bash"><span class="hl-0">npx</span><span class="hl-1"> </span><span class="hl-2">playwright</span><span class="hl-1"> </span><span class="hl-2">install</span><span class="hl-1"> </span><span class="hl-2">chromium</span><span class="hl-1"> </span><span class="hl-2">chromium-headless-shell</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:e2e</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The tests use a deterministic mocked live cluster, so they do not require kubectl, a kubeconfig, or a live Kubernetes cluster. They cover every resource view and basic inspector, sorting, theme, and compact-mode interactions. The e2e run records <code>assets/snapshots/video.webm</code> and generates <code>assets/video-preview.gif</code> with ffmpeg.</p>
+<h3 id="run-unit-tests" class="tsd-anchor-link">Run unit tests<a href="#run-unit-tests" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:unit</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The unit tests cover the renderer's pure formatting, status, identity, and demo-data helper functions with multiple inputs.</p>
+<h3 id="build-with-electron-builder" class="tsd-anchor-link">Build with Electron Builder<a href="#build-with-electron-builder" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Electron Builder is configured in <a href="media/electron-builder.yml">electron-builder.yml</a> for all desktop platforms. It uses the Forge Vite plugin to compile the application bundles, then creates native distributables in <code>dist/</code>:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">package:builder</span>
+</code><button type="button">Copy</button></pre>
+
+<p>The configured targets are:</p>
+<ul>
+<li>Windows: NSIS installer, portable executable, and zip</li>
+<li>macOS: DMG and zip</li>
+<li>Linux: AppImage, deb, rpm, and tar.gz</li>
+</ul>
+<h2 id="useful-commands-summary" class="tsd-anchor-link">Useful commands summary<a href="#useful-commands-summary" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">start</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">package:builder</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:e2e</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:unit</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">generate:video-preview</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test</span>
+</code><button type="button">Copy</button></pre>
+
+</div></div>
+<div class="col-sidebar">
+<div class="page-menu">
+<div class="tsd-navigation settings">
+<details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>Settings</h3></summary>
+<div class="tsd-accordion-details">
+<div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span>
+<ul id="tsd-filter-options">
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-protected" name="protected"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Protected</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li>
+<li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-external" name="external"/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>External</span></label></li></ul></div>
+<div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div>
+<details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg>
+<h3>On This Page</h3></summary>
+<div class="tsd-accordion-details"><a href="#kube-cluster-ui"><span>Kube <wbr/>Cluster <wbr/>UI</span></a>
+<ul>
+<li><a href="#project-support"><span>Project <wbr/>Support</span></a></li>
+<li><a href="#downloads-and-links"><span>Downloads and <wbr/>Links</span></a></li>
+<li><a href="#watch-the-demo"><span>Watch the demo</span></a></li>
+<li><a href="#features"><span>Features</span></a></li>
+<li><a href="#development"><span>Development</span></a></li>
+<li>
+<ul>
+<li><a href="#install-dependencies"><span>Install dependencies</span></a></li>
+<li><a href="#run-locally-during-development"><span>Run locally during development</span></a></li>
+<li><a href="#run-playwright-ui-tests"><span>Run <wbr/>Playwright <wbr/>UI tests</span></a></li>
+<li><a href="#run-unit-tests"><span>Run unit tests</span></a></li>
+<li><a href="#build-with-electron-builder"><span>Build with <wbr/>Electron <wbr/>Builder</span></a></li></ul></li>
+<li><a href="#useful-commands-summary"><span>Useful commands summary</span></a></li></ul></div></details></div>
+<div class="site-menu">
+<nav class="tsd-navigation"><a href="modules.html">kube-cluster-ui</a>
+<ul class="tsd-small-nested-navigation" id="tsd-nav-container">
+<li>Loading...</li></ul></nav></div></div></div><footer>
+<p class="tsd-generator">Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p></footer>
+<div class="overlay"></div></body></html>

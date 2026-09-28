@@ -1,3 +1,4 @@
+/** Unit tests for pure renderer helpers and deterministic Kubernetes fixtures. */
 import { describe, expect, it } from 'vitest';
 import { parseKubectlCommand } from '../src/kubectl-command';
 import {
@@ -35,11 +36,18 @@ import {
   type KubeResource,
 } from '../src/renderer';
 
+/** Shared ready Pod fixture used by resource identity and status test cases. */
 const podResource = pod('platform', 'api', 'Running', '2/2', 0, 'node-a', -2);
+/** Shared pending Pod fixture used by non-ready resource test cases. */
 const pendingPod = pod('payments', 'worker', 'Pending', '0/1', 3, 'node-b', -48);
 
 // Builds the smallest useful resource for status-focused tests, keeping those
 // cases independent from the larger demo snapshot fixtures.
+/**
+ * Creates a minimal resource fixture with the supplied status fields.
+ * @param status - Status object consumed by the renderer helper under test.
+ * @returns Resource fixture with a stable name and the requested status.
+ */
 function resourceWithStatus(status: Record<string, unknown>): KubeResource {
   return { metadata: { name: 'resource' }, status };
 }

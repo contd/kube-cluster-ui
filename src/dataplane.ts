@@ -1,3 +1,4 @@
+/** Pure Kubernetes resource formatting, filtering, status, and navigation helpers. */
 import YAML from 'yaml';
 import type {
   ClusterContext,
@@ -10,6 +11,7 @@ import type {
   StatusTone,
 } from './app.types';
 
+/** Navigation entries and their presentation metadata, in sidebar display order. */
 export const navItems: NavItem[] = [
   { kind: 'dashboard', label: 'Dashboard', group: 'Cluster', icon: 'layout-dashboard' },
   { kind: 'nodes', label: 'Nodes', group: 'Cluster', icon: 'server' },
@@ -36,6 +38,7 @@ export const navItems: NavItem[] = [
   { kind: 'events', label: 'Events', group: 'Observability', icon: 'bell' },
 ];
 
+/** Resource kinds whose rows can be filtered by the selected namespace. */
 export const namespacedKinds = new Set<ResourceKind>([
   'pods',
   'deployments',
@@ -55,6 +58,10 @@ export const namespacedKinds = new Set<ResourceKind>([
 /**
  * Traverses an unknown Kubernetes object by key path without throwing when an
  * intermediate field is absent or has a non-object value.
+ *
+ * @param value - Root object to inspect.
+ * @param path - Ordered property names leading to the desired value.
+ * @returns The nested value, or `undefined` when any path segment is unavailable.
  */
 export function objectValue(
   value: Record<string, unknown> | undefined,
@@ -72,6 +79,10 @@ export function objectValue(
 /**
  * Normalizes API values for display: nullish/empty values use the fallback,
  * arrays become comma-separated text, and all other values use String().
+ *
+ * @param value - API value to convert.
+ * @param fallback - Text used for missing, null, or empty-string values.
+ * @returns A display-safe string representation.
  */
 export function stringValue(value: unknown, fallback = '-'): string {
   if (value === undefined || value === null || value === '') {
@@ -85,7 +96,12 @@ export function stringValue(value: unknown, fallback = '-'): string {
   return String(value);
 }
 
-/** Converts Kubernetes memory quantities into compact binary-unit display text. */
+/**
+ * Converts Kubernetes memory quantities into compact binary-unit display text.
+ *
+ * @param value - Memory quantity, such as `2048Mi` or `2Gi`.
+ * @returns A human-readable binary quantity, or the original text if it is unrecognized.
+ */
 export function humanReadableMemory(value: unknown): string {
   const raw = stringValue(value, '').trim();
   const match = raw.match(/^([0-9]+(?:\.[0-9]+)?)(Ei|Pi|Ti|Gi|Mi|Ki|E|P|T|G|M|K|B)?$/i);
@@ -128,12 +144,22 @@ export function humanReadableMemory(value: unknown): string {
   return `${displayValue.toFixed(precision)} ${units[unitIndex]}`;
 }
 
-/** Returns resource metadata while giving callers a safe empty object fallback. */
+/**
+ * Returns resource metadata while giving callers a safe empty object fallback.
+ *
+ * @param resource - Kubernetes resource whose metadata is requested.
+ * @returns Resource metadata, or an empty object when absent.
+ */
 export function metadata(resource: KubeResource): Metadata {
   return resource.metadata || {};
 }
 
-/** Resolves the display name, using an Event's involved object before its own name. */
+/**
+ * Resolves the display name, using an Event's involved object before its own name.
+ *
+ * @param resource - Kubernetes resource to name.
+ * @returns The resource name or `-` when no name is available.
+ */
 export function resourceName(resource: KubeResource): string {
   if (resource.kind === 'Event') {
     return resource.involvedObject?.name || metadata(resource).name || '-';
@@ -142,7 +168,12 @@ export function resourceName(resource: KubeResource): string {
   return metadata(resource).name || '-';
 }
 
-/** Resolves namespace ownership and supplies cluster/default values for unnamespaced resources. */
+/**
+ * Resolves namespace ownership and supplies cluster/default values for unnamespaced resources.
+ *
+ * @param resource - Kubernetes resource whose namespace is requested.
+ * @returns Its namespace, `cluster` for Nodes, or `default` as a fallback.
+ */
 export function resourceNamespace(resource: KubeResource): string {
   return (
     metadata(resource).namespace ||
@@ -151,12 +182,22 @@ export function resourceNamespace(resource: KubeResource): string {
   );
 }
 
-/** Creates the namespace/name identity used to correlate rows with the selected resource. */
+/**
+ * Creates the namespace/name identity used to correlate rows with the selected resource.
+ *
+ * @param resource - Kubernetes resource to identify.
+ * @returns A stable `namespace:name` key.
+ */
 export function resourceId(resource: KubeResource): string {
   return `${resourceNamespace(resource)}:${metadata(resource).name || resourceName(resource)}`;
 }
 
-/** Converts an ISO timestamp into a compact minutes/hours/days elapsed label. */
+/**
+ * Converts an ISO timestamp into a compact minutes/hours/days elapsed label.
+ *
+ * @param isoDate - Timestamp to measure from, when available.
+ * @returns Elapsed time in minutes, hours, or days, or `-` when absent.
+ */
 export function age(isoDate?: string): string {
   if (!isoDate) {
     return '-';
@@ -178,7 +219,12 @@ export function age(isoDate?: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-/** Counts ready pod containers and returns the Kubernetes-style ready/total value. */
+/**
+ * Counts ready pod containers and returns the Kubernetes-style ready/total value.
+ *
+ * @param resource - Pod resource whose container statuses are inspected.
+ * @returns Ready and total container counts, or `-` when status data is unavailable.
+ */
 export function podReady(resource: KubeResource): string {
   const statuses = objectValue(resource.status, ['containerStatuses']);
   if (!Array.isArray(statuses)) {
@@ -192,7 +238,12 @@ export function podReady(resource: KubeResource): string {
   return `${ready}/${statuses.length}`;
 }
 
-/** Reads ready and desired replica counts from status/spec and formats them as ready/desired. */
+/**
+ * Reads ready and desired replica counts from status/spec and formats them as ready/desired.
+ *
+ * @param resource - Workload resource whose replica counts are inspected.
+ * @returns Ready and desired replica counts in `ready/desired` form.
+ */
 export function workloadReady(resource: KubeResource): string {
   const ready = stringValue(objectValue(resource.status, ['readyReplicas']), '0');
   const desired = stringValue(
@@ -203,7 +254,12 @@ export function workloadReady(resource: KubeResource): string {
   return `${ready}/${desired}`;
 }
 
-/** Formats a workload's updated and available pod counts as updated/available. */
+/**
+ * Formats a workload's updated and available pod counts as updated/available.
+ *
+ * @param resource - Workload resource whose pod counts are inspected.
+ * @returns Updated and available counts in `updated/available` form.
+ */
 export function workloadPods(resource: KubeResource): string {
   const updated = objectValue(resource.status, ['updatedReplicas']) ??
     objectValue(resource.status, ['currentNumberScheduled']) ??
@@ -214,7 +270,12 @@ export function workloadPods(resource: KubeResource): string {
   return `${stringValue(updated, '0')}/${stringValue(available, '0')}`;
 }
 
-/** Returns the desired replica count for a workload from status or spec. */
+/**
+ * Returns the desired replica count for a workload from status or spec.
+ *
+ * @param resource - Workload resource whose desired count is inspected.
+ * @returns Desired replica count, defaulting to `0` when absent.
+ */
 export function workloadReplicas(resource: KubeResource): string {
   const replicas = objectValue(resource.status, ['replicas']) ??
     objectValue(resource.spec, ['replicas']) ??
@@ -223,17 +284,29 @@ export function workloadReplicas(resource: KubeResource): string {
   return stringValue(replicas, '0');
 }
 
-/** Returns the DaemonSet desired node count. */
+/**
+ * Returns the DaemonSet desired node count.
+ * @param resource - DaemonSet resource to inspect.
+ * @returns Desired scheduled nodes, defaulting to `0`.
+ */
 export function daemonsetDesired(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['desiredNumberScheduled']), '0');
 }
 
-/** Returns the DaemonSet current scheduled node count. */
+/**
+ * Returns the DaemonSet current scheduled node count.
+ * @param resource - DaemonSet resource to inspect.
+ * @returns Current scheduled nodes, defaulting to `0`.
+ */
 export function daemonsetCurrent(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['currentNumberScheduled']), '0');
 }
 
-/** Returns the DaemonSet ready node count. */
+/**
+ * Returns the DaemonSet ready node count.
+ * @param resource - DaemonSet resource to inspect.
+ * @returns Ready nodes, defaulting to `0`.
+ */
 export function daemonsetReady(resource: KubeResource): string {
   return stringValue(
     objectValue(resource.status, ['numberReady']) ??
@@ -242,7 +315,11 @@ export function daemonsetReady(resource: KubeResource): string {
   );
 }
 
-/** Returns the DaemonSet up-to-date node count. */
+/**
+ * Returns the DaemonSet up-to-date node count.
+ * @param resource - DaemonSet resource to inspect.
+ * @returns Updated nodes, defaulting to `0`.
+ */
 export function daemonsetUpToDate(resource: KubeResource): string {
   return stringValue(
     objectValue(resource.status, ['updatedNumberScheduled']) ??
@@ -252,27 +329,47 @@ export function daemonsetUpToDate(resource: KubeResource): string {
   );
 }
 
-/** Returns the DaemonSet available node count. */
+/**
+ * Returns the DaemonSet available node count.
+ * @param resource - DaemonSet resource to inspect.
+ * @returns Available nodes, defaulting to `0`.
+ */
 export function daemonsetAvailable(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['numberAvailable']), '0');
 }
 
-/** Returns the desired ReplicaSet pod count from its spec. */
+/**
+ * Returns the desired ReplicaSet pod count from its spec.
+ * @param resource - ReplicaSet resource to inspect.
+ * @returns Desired replicas, defaulting to `0`.
+ */
 export function replicasetDesired(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['replicas']), '0');
 }
 
-/** Returns the current ReplicaSet pod count from status. */
+/**
+ * Returns the current ReplicaSet pod count from status.
+ * @param resource - ReplicaSet resource to inspect.
+ * @returns Current replicas, defaulting to `0`.
+ */
 export function replicasetCurrent(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['replicas']), '0');
 }
 
-/** Returns the ready ReplicaSet pod count from status. */
+/**
+ * Returns the ready ReplicaSet pod count from status.
+ * @param resource - ReplicaSet resource to inspect.
+ * @returns Ready replicas, defaulting to `0`.
+ */
 export function replicasetReady(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['readyReplicas']), '0');
 }
 
-/** Maps Job status fields to a concise lifecycle label. */
+/**
+ * Maps Job status fields to a concise lifecycle label.
+ * @param resource - Job resource whose conditions and counters are inspected.
+ * @returns `Failed`, `Complete`, `Running`, or `Pending`.
+ */
 export function jobStatus(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
   if (Array.isArray(conditions)) {
@@ -294,12 +391,20 @@ export function jobStatus(resource: KubeResource): string {
   return Number(objectValue(resource.status, ['active']) || 0) > 0 ? 'Running' : 'Pending';
 }
 
-/** Formats completed and desired Job pod counts as completed/desired. */
+/**
+ * Formats completed and desired Job pod counts as completed/desired.
+ * @param resource - Job resource whose completion counters are inspected.
+ * @returns Succeeded and desired pod counts in `completed/desired` form.
+ */
 export function jobCompletion(resource: KubeResource): string {
   return `${stringValue(objectValue(resource.status, ['succeeded']), '0')}/${stringValue(objectValue(resource.spec, ['completions']), '1')}`;
 }
 
-/** Calculates Job runtime from start and completion timestamps. */
+/**
+ * Calculates Job runtime from start and completion timestamps.
+ * @param resource - Job resource containing start and optional completion times.
+ * @returns Elapsed runtime in seconds, minutes, or hours, or `-` if invalid.
+ */
 export function jobDuration(resource: KubeResource): string {
   const start = objectValue(resource.status, ['startTime']);
   if (typeof start !== 'string') return '-';
@@ -317,27 +422,47 @@ export function jobDuration(resource: KubeResource): string {
   return remainingMinutes ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-/** Returns the Job start timestamp from Kubernetes status. */
+/**
+ * Returns the Job start timestamp from Kubernetes status.
+ * @param resource - Job resource to inspect.
+ * @returns Start timestamp text, or `-` when absent.
+ */
 export function jobStartTime(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['startTime']));
 }
 
-/** Returns the Job completion timestamp from Kubernetes status. */
+/**
+ * Returns the Job completion timestamp from Kubernetes status.
+ * @param resource - Job resource to inspect.
+ * @returns Completion timestamp text, or `-` when absent.
+ */
 export function jobEndTime(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['completionTime']));
 }
 
-/** Returns the number of ready Job pods. */
+/**
+ * Returns the number of ready Job pods.
+ * @param resource - Job resource to inspect.
+ * @returns Ready pod count, defaulting to `0`.
+ */
 export function jobReady(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['ready']), '0');
 }
 
-/** Returns the number of successfully completed Job pods. */
+/**
+ * Returns the number of successfully completed Job pods.
+ * @param resource - Job resource to inspect.
+ * @returns Succeeded pod count, defaulting to `0`.
+ */
 export function jobSucceeded(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['succeeded']), '0');
 }
 
-/** Indicates whether Kubernetes has marked the Job for deletion. */
+/**
+ * Indicates whether Kubernetes has marked the Job for deletion.
+ * @param resource - Job resource whose metadata is inspected.
+ * @returns `Yes` when deletion is pending, otherwise `No`.
+ */
 export function jobTerminating(resource: KubeResource): string {
   const deletionTimestamp = objectValue(
     resource.metadata as Record<string, unknown> | undefined,
@@ -346,38 +471,66 @@ export function jobTerminating(resource: KubeResource): string {
   return deletionTimestamp ? 'Yes' : 'No';
 }
 
-/** Returns a CronJob's configured cron schedule. */
+/**
+ * Returns a CronJob's configured cron schedule.
+ * @param resource - CronJob resource to inspect.
+ * @returns Configured schedule, or `-` when absent.
+ */
 export function cronJobSchedule(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['schedule']));
 }
 
-/** Returns whether a CronJob is suspended. */
+/**
+ * Returns whether a CronJob is suspended.
+ * @param resource - CronJob resource to inspect.
+ * @returns `Yes` when suspended, otherwise `No`.
+ */
 export function cronJobSuspend(resource: KubeResource): string {
   return objectValue(resource.spec, ['suspend']) === true ? 'Yes' : 'No';
 }
 
-/** Returns the number of currently active CronJob child Jobs. */
+/**
+ * Returns the number of currently active CronJob child Jobs.
+ * @param resource - CronJob resource to inspect.
+ * @returns Number of active child Jobs, defaulting to `0`.
+ */
 export function cronJobActive(resource: KubeResource): string {
   const active = objectValue(resource.status, ['active']);
   return Array.isArray(active) ? String(active.length) : '0';
 }
 
-/** Returns the timestamp of the most recent CronJob schedule. */
+/**
+ * Returns the timestamp of the most recent CronJob schedule.
+ * @param resource - CronJob resource to inspect.
+ * @returns Last schedule timestamp, or `-` when absent.
+ */
 export function cronJobLastSchedule(resource: KubeResource): string {
   return stringValue(objectValue(resource.status, ['lastScheduleTime']));
 }
 
-/** Returns the PersistentVolume storage class. */
+/**
+ * Returns the PersistentVolume storage class.
+ * @param resource - PersistentVolume resource to inspect.
+ * @returns Storage class name, or `-` when absent.
+ */
 export function pvStorageClass(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['storageClassName']));
 }
 
-/** Returns the PersistentVolume storage capacity. */
+/**
+ * Returns the PersistentVolume storage capacity.
+ * @param resource - PersistentVolume resource to inspect.
+ * @returns Capacity quantity, or `-` when absent.
+ */
 export function pvCapacity(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['capacity', 'storage']));
 }
 
-/** Returns the namespace/name claim reference attached to a PersistentVolume. */
+/**
+ * Returns the namespace/name claim reference attached to a PersistentVolume.
+ * @param resource - PersistentVolume resource to inspect.
+ * @returns Claim reference in `namespace/name` form, or `-` if absent.
+ */
 export function pvClaim(resource: KubeResource): string {
   const claim = objectValue(resource.spec, ['claimRef']) as Record<string, unknown> | undefined;
   if (!claim) return '-';
@@ -386,12 +539,20 @@ export function pvClaim(resource: KubeResource): string {
   return namespace && name ? `${namespace}/${name}` : name || namespace || '-';
 }
 
-/** Maps PersistentVolume phase to Bound or Unbound. */
+/**
+ * Maps PersistentVolume phase to Bound or Unbound.
+ * @param resource - PersistentVolume resource to inspect.
+ * @returns `Bound` for a Bound phase, otherwise `Unbound`.
+ */
 export function pvStatus(resource: KubeResource): string {
   return objectValue(resource.status, ['phase']) === 'Bound' ? 'Bound' : 'Unbound';
 }
 
-/** Returns a compact, 100-character maximum summary of resource labels. */
+/**
+ * Returns a compact, 100-character maximum summary of resource labels.
+ * @param resource - Resource whose metadata labels are summarized.
+ * @returns Comma-separated `key=value` labels, truncated to 100 characters, or `-`.
+ */
 export function labelsSummary(resource: KubeResource): string {
   const labels = Object.entries(metadata(resource).labels || {})
     .map(([key, value]) => `${key}=${value}`)
@@ -399,7 +560,11 @@ export function labelsSummary(resource: KubeResource): string {
   return labels.slice(0, 100) || '-';
 }
 
-/** Returns a StorageClass provisioner. */
+/**
+ * Returns a StorageClass provisioner.
+ * @param resource - StorageClass resource to inspect.
+ * @returns Provisioner name, or `-` when absent.
+ */
 export function storageClassProvisioner(resource: KubeResource): string {
   return stringValue(
     resource.provisioner ??
@@ -407,28 +572,48 @@ export function storageClassProvisioner(resource: KubeResource): string {
   );
 }
 
-/** Returns a StorageClass reclaim policy with Kubernetes' default fallback. */
+/**
+ * Returns a StorageClass reclaim policy with Kubernetes' default fallback.
+ * @param resource - StorageClass resource to inspect.
+ * @returns Reclaim policy, defaulting to `Delete`.
+ */
 export function storageClassReclaimPolicy(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['reclaimPolicy']), 'Delete');
 }
 
-/** Returns a StorageClass volume binding mode with Kubernetes' default fallback. */
+/**
+ * Returns a StorageClass volume binding mode with Kubernetes' default fallback.
+ * @param resource - StorageClass resource to inspect.
+ * @returns Binding mode, defaulting to `Immediate`.
+ */
 export function storageClassBindingMode(resource: KubeResource): string {
   return stringValue(objectValue(resource.spec, ['volumeBindingMode']), 'Immediate');
 }
 
-/** Returns whether a StorageClass allows volume expansion. */
+/**
+ * Returns whether a StorageClass allows volume expansion.
+ * @param resource - StorageClass resource to inspect.
+ * @returns `Yes` when expansion is enabled, otherwise `No`.
+ */
 export function storageClassExpansion(resource: KubeResource): string {
   return objectValue(resource.spec, ['allowVolumeExpansion']) === true ? 'Yes' : 'No';
 }
 
-/** Returns the number of container statuses defined for a Pod. */
+/**
+ * Returns the number of container statuses defined for a Pod.
+ * @param resource - Pod resource to inspect.
+ * @returns Container status count, defaulting to `0`.
+ */
 export function podContainerCount(resource: KubeResource): string {
   const containerStatuses = objectValue(resource.status, ['containerStatuses']);
   return Array.isArray(containerStatuses) ? String(containerStatuses.length) : '0';
 }
 
-/** Returns the name of the first Kubernetes controller owner for a resource. */
+/**
+ * Returns the name of the first Kubernetes controller owner for a resource.
+ * @param resource - Resource whose owner references are inspected.
+ * @returns First owner name, or `-` when no owner reference exists.
+ */
 export function controlledBy(resource: KubeResource): string {
   const ownerReferences = objectValue(
     resource.metadata as Record<string, unknown> | undefined,
@@ -442,7 +627,11 @@ export function controlledBy(resource: KubeResource): string {
   return stringValue(owner?.name);
 }
 
-/** Interprets the node Ready condition and distinguishes Ready, NotReady, and unknown data. */
+/**
+ * Interprets the node Ready condition and distinguishes Ready, NotReady, and unknown data.
+ * @param resource - Node resource whose conditions are inspected.
+ * @returns `Ready`, `NotReady`, or `Unknown` when conditions are absent.
+ */
 export function nodePressure(resource: KubeResource): string {
   const conditions = objectValue(resource.status, ['conditions']);
   if (!Array.isArray(conditions)) {
@@ -457,7 +646,12 @@ export function nodePressure(resource: KubeResource): string {
   return ready?.status === 'True' ? 'Ready' : 'NotReady';
 }
 
-/** Selects the resource-kind-specific status field used by tables, filtering, and summaries. */
+/**
+ * Selects the resource-kind-specific status field used by tables, filtering, and summaries.
+ * @param resource - Kubernetes resource whose status should be displayed.
+ * @param kind - Resource kind that determines which status field is used.
+ * @returns Normalized status text for the requested resource kind.
+ */
 export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   if (kind === 'pods') return stringValue(objectValue(resource.status, ['phase']));
   if (kind === 'nodes') return nodePressure(resource);
@@ -469,7 +663,12 @@ export function statusFor(resource: KubeResource, kind: ResourceKind): string {
   return stringValue(objectValue(resource.spec, ['type']));
 }
 
-/** Maps normalized status text to a semantic UI tone for healthy, warning, danger, or neutral. */
+/**
+ * Maps normalized status text to a semantic UI tone for healthy, warning, danger, or neutral.
+ * @param resource - Resource whose current status is classified.
+ * @param kind - Resource kind used to resolve the status value.
+ * @returns Semantic tone used by badges and status indicators.
+ */
 export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTone {
   const status = statusFor(resource, kind).toLowerCase();
 
@@ -481,7 +680,11 @@ export function statusTone(resource: KubeResource, kind: ResourceKind): StatusTo
   return 'neutral';
 }
 
-/** Builds the column definitions and resource readers required by each table category. */
+/**
+ * Builds the column definitions and resource readers required by each table category.
+ * @param kind - Resource kind whose table columns are requested.
+ * @returns Ordered column labels and value readers for the resource table.
+ */
 export function columnsFor(kind: ResourceKind): Column[] {
   const common: Column[] = [
     { label: 'Namespace', value: resourceNamespace },
@@ -649,7 +852,11 @@ export function columnsFor(kind: ResourceKind): Column[] {
   ];
 }
 
-/** Escapes Kubernetes-provided text before it is interpolated into renderer HTML. */
+/**
+ * Escapes Kubernetes-provided text before it is interpolated into renderer HTML.
+ * @param value - Untrusted text to escape.
+ * @returns HTML-safe text with special characters replaced by entities.
+ */
 export function escapeHtml(value: string): string {
   const entities: Record<string, string> = {
     '&': '&amp;',
@@ -662,7 +869,11 @@ export function escapeHtml(value: string): string {
   return value.replace(/[&<>"']/g, (character) => entities[character] ?? character);
 }
 
-/** Produces YAML for a resource while removing server-managed metadata fields from the preview. */
+/**
+ * Produces YAML for a resource while removing server-managed metadata fields from the preview.
+ * @param resource - Kubernetes resource to serialize.
+ * @returns YAML manifest with `metadata.managedFields` omitted.
+ */
 export function formatManifest(resource: KubeResource): string {
   const manifest = {
     apiVersion: resource.apiVersion ?? 'v1',
@@ -672,13 +883,20 @@ export function formatManifest(resource: KubeResource): string {
     ...(resource.status ? { status: resource.status } : {}),
     ...(resource.data ? { data: resource.data } : {}),
     ...Object.fromEntries(Object.entries(resource).filter(([key]) => !['apiVersion', 'kind', 'metadata', 'spec', 'status', 'data'].includes(key))),
-  } as Record<string, unknown> & { metadata: Record<string, unknown> };
+  } as Record<string, unknown> & {
+    /** Resource metadata copied into the sanitized manifest. */
+    metadata: Record<string, unknown>;
+  };
 
   delete manifest.metadata.managedFields;
   return YAML.stringify(manifest);
 }
 
-/** Escapes YAML and adds CSS spans for keys, scalar values, and comments in the manifest viewer. */
+/**
+ * Escapes YAML and adds CSS spans for keys, scalar values, and comments in the manifest viewer.
+ * @param yaml - YAML text to format for HTML display.
+ * @returns Escaped YAML markup with syntax-highlight classes.
+ */
 export function highlightYaml(yaml: string): string {
   return yaml.split('\n').map((line) => {
     let highlighted = escapeHtml(line);
@@ -689,13 +907,25 @@ export function highlightYaml(yaml: string): string {
   }).join('\n');
 }
 
-/** Reads one resource collection from a snapshot and returns an empty list for missing data. */
+/**
+ * Reads one resource collection from a snapshot and returns an empty list for missing data.
+ * @param snapshot - Cluster snapshot containing resource collections.
+ * @param kind - Resource collection to retrieve.
+ * @returns Resources for the kind, or an empty list when unavailable.
+ */
 export function getResources(snapshot: Snapshot, kind: ResourceKind): KubeResource[] {
   if (kind === 'namespaces') return snapshot.namespaces;
   return snapshot.resources[kind] || [];
 }
 
-/** Filters resources by namespace and a case-insensitive search across names, status, and metadata. */
+/**
+ * Filters resources by namespace and a case-insensitive search across names, status, and metadata.
+ * @param snapshot - Cluster snapshot used as the source collection.
+ * @param selectedKind - Resource kind currently shown in the UI.
+ * @param namespace - Selected namespace, or `all` to include every namespace.
+ * @param query - Search text applied to resource names, statuses, and metadata.
+ * @returns Resources matching both the namespace and search filters.
+ */
 export function getVisibleResources(snapshot: Snapshot, selectedKind: ResourceKind, namespace: string, query: string): KubeResource[] {
   const normalizedQuery = query.trim().toLowerCase();
   return getResources(snapshot, selectedKind).filter((resource) => {
@@ -706,23 +936,40 @@ export function getVisibleResources(snapshot: Snapshot, selectedKind: ResourceKi
   });
 }
 
-/** Finds the currently selected resource from an already filtered collection. */
+/**
+ * Finds the currently selected resource from an already filtered collection.
+ * @param resources - Visible resources to search.
+ * @param selectedResourceId - Stable namespace/name identity of the selection.
+ * @returns The selected resource, or `undefined` when it is not in the collection.
+ */
 export function selectedResource(resources: KubeResource[], selectedResourceId: string): KubeResource | undefined {
   return resources.find((resource) => resourceId(resource) === selectedResourceId);
 }
 
-/** Extracts unique namespace names, sorts them, and prepends the all-namespaces option. */
+/**
+ * Extracts unique namespace names, sorts them, and prepends the all-namespaces option.
+ * @param snapshot - Cluster snapshot containing namespace resources.
+ * @returns Namespace selector options beginning with `all`.
+ */
 export function namespaceOptions(snapshot: Snapshot): string[] {
   const namespaces = snapshot.namespaces.map((resource) => metadata(resource).name).filter((name): name is string => Boolean(name));
   return ['all', ...Array.from(new Set(namespaces)).sort()];
 }
 
-/** Chooses the most useful visible label for a kube context, with a final unknown fallback. */
+/**
+ * Chooses the most useful visible label for a kube context, with a final unknown fallback.
+ * @param context - Context whose user-facing label is requested.
+ * @returns Context name, source filename, or `Unknown context`.
+ */
 export function contextLabel(context: ClusterContext): string {
   return context.name || context.fileName || 'Unknown context';
 }
 
-/** Aggregates pod, node, workload, and event readiness metrics for the dashboard summary. */
+/**
+ * Aggregates pod, node, workload, and event readiness metrics for the dashboard summary.
+ * @param snapshot - Cluster snapshot whose resources are summarized.
+ * @returns Resource collections and their running, ready, and warning counts.
+ */
 export function healthSummary(snapshot: Snapshot) {
   const pods = getResources(snapshot, 'pods');
   const nodes = getResources(snapshot, 'nodes');
@@ -735,7 +982,11 @@ export function healthSummary(snapshot: Snapshot) {
   return { pods, nodes, events, workloads, runningPods, readyNodes, warnings, readyWorkloads };
 }
 
-/** Resolves the navigation label for a resource kind and falls back to the raw kind value. */
+/**
+ * Resolves the navigation label for a resource kind and falls back to the raw kind value.
+ * @param kind - Resource kind whose navigation label is requested.
+ * @returns Visible navigation label or the raw resource-kind identifier.
+ */
 export function kindLabel(kind: ResourceKind): string {
   return navItems.find((item) => item.kind === kind)?.label || kind;
 }

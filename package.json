@@ -30,6 +30,7 @@
     "test:e2e": "playwright test && npm run generate:video-preview",
     "test:unit": "vitest run",
     "test": "vitest run && npm run test:e2e",
+    "docs": "typedoc --entryPointStrategy expand --skipErrorChecking --out docs src",
     "generate:video-preview": "node scripts/generate-video-preview.js"
   },
   "license": "MIT",
@@ -56,6 +57,7 @@
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "jsdom": "^25.0.1",
+    "typedoc": "^0.28.20",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",
     "vitest": "^2.1.9"

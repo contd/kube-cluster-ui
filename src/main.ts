@@ -1,3 +1,4 @@
+/** Electron main process: kubeconfig discovery, Kubernetes IPC, menus, and window lifecycle. */
 import { app, BrowserWindow, ipcMain, Menu, nativeTheme } from 'electron';
 import { execFile } from 'node:child_process';
 import crypto from 'node:crypto';
@@ -20,9 +21,12 @@ if (started) {
   app.quit();
 }
 
+/** Conventional kubeconfig fallback used when no configured source is available. */
 const defaultKubeconfigPath = path.join(os.homedir(), '.kube', 'config');
+/** Filename used to persist application settings under Electron's user-data directory. */
 const settingsFileName = 'settings.json';
 
+/** Resolves configured, environment, and default kubeconfig files and directories. */
 const resolveKubeconfigCandidates = async (): Promise<string[]> => {
   const homeDir = process.env.HOME || process.env.USERPROFILE || '';
   const envKubeconfig = process.env.KUBECONFIG || '';
@@ -64,12 +68,23 @@ const resolveKubeconfigCandidates = async (): Promise<string[]> => {
   return [...new Set(resolvedFiles)];
 };
 
+/**
+ * Returns the first discovered kubeconfig path or the configured default fallback.
+ *
+ * @returns The preferred kubeconfig path, even when it does not yet exist.
+ */
 const resolveDefaultKubeconfigPath = async (): Promise<string> => {
   const candidates = await resolveKubeconfigCandidates();
   const settings = await readSettings();
   return candidates[0] || settings.kubeconfigSearchPath || defaultKubeconfigPath;
 };
 
+/**
+ * Expands a leading home-directory marker and normalizes a kubeconfig search path.
+ *
+ * @param searchPath - User-entered file or directory path.
+ * @returns An absolute normalized filesystem path.
+ */
 const normalizeKubeconfigSearchPath = (searchPath: string): string => {
   const value = searchPath.trim();
   const expandedPath = value === '~'
@@ -80,6 +95,7 @@ const normalizeKubeconfigSearchPath = (searchPath: string): string => {
   return path.resolve(expandedPath);
 };
 
+/** Maps renderer resource kinds to Kubernetes API collection names. */
 const resourceMap = {
   nodes: 'nodes',
   namespaces: 'namespaces',
@@ -105,31 +121,50 @@ const resourceMap = {
   events: 'events',
 } as const;
 
+/** Resource kinds supported by the main-process Kubernetes API handlers. */
 type ResourceKind = keyof typeof resourceMap;
 
+/** Context metadata normalized from a file-based or user-saved kubeconfig. */
 type KubeContext = {
+  /** Stable context identifier combining its source and context name. */
   id: string;
+  /** Name of the context in the kubeconfig. */
   name: string;
+  /** Referenced cluster name. */
   cluster: string;
+  /** Referenced user name. */
   user: string;
+  /** Default namespace, or `default` when not specified. */
   namespace: string;
+  /** Kubeconfig file path or saved-configuration identifier. */
   filePath: string;
+  /** Kubeconfig filename or saved-configuration label. */
   fileName: string;
+  /** Whether the kubeconfig marks this context as current. */
   isCurrent: boolean;
+  /** In-memory kubeconfig YAML for configurations pasted into the application. */
   kubeconfig?: string;
 };
 
+/** Persisted user-pasted kubeconfig record. */
 type SavedCluster = {
+  /** Stable hash identifier for the kubeconfig document. */
   id: string;
+  /** Complete kubeconfig YAML document. */
   kubeconfig: string;
 };
 
+/** Application preferences persisted in the user-data settings file. */
 type AppSettings = {
+  /** Identifier of the context selected during the previous session. */
   selectedContextId?: string;
+  /** User-pasted kubeconfigs available for context discovery. */
   clusters?: SavedCluster[];
+  /** Preferred kubeconfig file or directory to scan. */
   kubeconfigSearchPath?: string;
 };
 
+/** Resource kinds whose objects are filtered by namespace. */
 const namespacedResources = new Set<ResourceKind>([
   'pods',
   'deployments',
@@ -146,6 +181,7 @@ const namespacedResources = new Set<ResourceKind>([
   'events',
 ]);
 
+/** Resource kinds fetched only when their navigation view is opened. */
 const resourcesLoadedOnDemand = new Set<ResourceKind>([
   'namespaces',
   'replicasets',
@@ -160,12 +196,24 @@ const resourcesLoadedOnDemand = new Set<ResourceKind>([
   'rolebindings',
 ]);
 
+/** Resolves the persisted settings file path for this Electron installation. */
 const settingsPath = () => path.join(app.getPath('userData'), settingsFileName);
 
+/**
+ * Narrows unknown JSON values to non-null, non-array object records.
+ *
+ * @param value - Value to inspect.
+ * @returns Whether the value is a record with string-keyed properties.
+ */
 const isRecord = (value: unknown): value is Record<string, unknown> => {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 };
 
+/**
+ * Reads persisted preferences, falling back to empty defaults for missing or invalid data.
+ *
+ * @returns Parsed application settings or an empty settings object.
+ */
 const readSettings = async (): Promise<AppSettings> => {
   try {
     const contents = await fs.readFile(settingsPath(), 'utf8');
@@ -176,11 +224,23 @@ const readSettings = async (): Promise<AppSettings> => {
   }
 };
 
+/**
+ * Writes application preferences as formatted JSON in Electron's user-data directory.
+ *
+ * @param settings - Complete settings state to persist.
+ * @returns A promise that resolves after the settings file is written.
+ */
 const writeSettings = async (settings: AppSettings) => {
   await fs.mkdir(path.dirname(settingsPath()), { recursive: true });
   await fs.writeFile(settingsPath(), JSON.stringify(settings, null, 2));
 };
 
+/**
+ * Recursively lists non-hidden regular files under a directory.
+ *
+ * @param directory - Directory whose descendants should be enumerated.
+ * @returns Paths to regular files found below the directory.
+ */
 const walkFiles = async (directory: string): Promise<string[]> => {
   const entries = await fs.readdir(directory, { withFileTypes: true });
 
@@ -208,6 +268,12 @@ const walkFiles = async (directory: string): Promise<string[]> => {
  * YAML ourselves. This also means the same kubeconfig parsing logic used by
  * the Kubernetes API client is used for context discovery.
  */
+/**
+ * Parses a kubeconfig file and normalizes its contexts for the renderer.
+ *
+ * @param filePath - Path to a kubeconfig file.
+ * @returns Parsed contexts, or an empty list when the file is invalid or unreadable.
+ */
 const readContextsFromFile = async (filePath: string): Promise<KubeContext[]> => {
   try {
     const kubeConfig = new k8s.KubeConfig();
@@ -230,6 +296,13 @@ const readContextsFromFile = async (filePath: string): Promise<KubeContext[]> =>
   }
 };
 
+/**
+ * Parses pasted kubeconfig YAML and tags its contexts with the saved source identifier.
+ *
+ * @param id - Stable source identifier used to distinguish the saved configuration.
+ * @param kubeconfig - YAML document to parse.
+ * @returns Parsed contexts, or an empty list when the document is invalid.
+ */
 const readContextsFromString = (id: string, kubeconfig: string): KubeContext[] => {
   try {
     const config = new k8s.KubeConfig();
@@ -252,6 +325,11 @@ const readContextsFromString = (id: string, kubeconfig: string): KubeContext[] =
   }
 };
 
+/**
+ * Discovers contexts from configured files and saved kubeconfig documents.
+ *
+ * @returns All valid contexts in stable name/source order.
+ */
 const scanKubeContexts = async (): Promise<KubeContext[]> => {
   try {
     const settings = await readSettings();
@@ -274,9 +352,20 @@ const scanKubeContexts = async (): Promise<KubeContext[]> => {
   }
 };
 
+/**
+ * Selects the requested, persisted, or first discovered Kubernetes context.
+ *
+ * @param requestedContextId - Optional context identifier to prefer.
+ * @returns All discovered contexts and the selected context, when available.
+ */
 const resolveSelectedContext = async (
   requestedContextId?: string,
-): Promise<{ contexts: KubeContext[]; selectedContext?: KubeContext }> => {
+): Promise<{
+  /** Contexts discovered from all configured kubeconfig sources. */
+  contexts: KubeContext[];
+  /** Resolved active context, if a valid context is available. */
+  selectedContext?: KubeContext;
+}> => {
   const contexts = await scanKubeContexts();
   const settings = await readSettings();
 
@@ -296,8 +385,11 @@ const resolveSelectedContext = async (
 };
 
 /**
- * Create a KubeConfig for the selected context and let client-node handle
- * authentication, TLS, exec credential plugins, proxies, etc.
+ * Creates a client-node configuration for the context, preserving its authentication,
+ * TLS, exec-credential plugin, and proxy settings.
+ *
+ * @param context - Resolved context to load from its file or in-memory YAML.
+ * @returns A client-node KubeConfig set to the requested context.
  */
 const createKubeConfig = (context: KubeContext): k8s.KubeConfig => {
   const kubeConfig = new k8s.KubeConfig();
@@ -310,15 +402,28 @@ const createKubeConfig = (context: KubeContext): k8s.KubeConfig => {
   return kubeConfig;
 };
 
+/** Typed Kubernetes API clients used by resource listing and detail handlers. */
 type KubernetesClients = {
+  /** Core resources such as Pods, Nodes, Services, and Namespaces. */
   core: k8s.CoreV1Api;
+  /** Workload resources such as Deployments and ReplicaSets. */
   apps: k8s.AppsV1Api;
+  /** Jobs and CronJobs. */
   batch: k8s.BatchV1Api;
+  /** Persistent volumes and StorageClasses. */
   storage: k8s.StorageV1Api;
+  /** Ingress resources. */
   networking: k8s.NetworkingV1Api;
+  /** Roles and role bindings. */
   rbac: k8s.RbacAuthorizationV1Api;
 };
 
+/**
+ * Creates all Kubernetes API clients bound to a single resolved context.
+ *
+ * @param context - Context whose kubeconfig and credentials should configure the clients.
+ * @returns API clients for each resource group supported by the application.
+ */
 const createClients = (context: KubeContext): KubernetesClients => {
   const kubeConfig = createKubeConfig(context);
 
@@ -333,11 +438,18 @@ const createClients = (context: KubeContext): KubernetesClients => {
 };
 
 /**
- * client-node v2 returns Kubernetes objects directly. The helper also accepts
- * the old `{ body: ... }` shape so the code remains easy to downgrade if the
- * project is pinned to an older client-node release.
+ * Unwraps Kubernetes API responses while accepting both current and legacy client-node shapes.
+ *
+ * client-node v2 returns objects directly; older versions may wrap them in a `body` property.
+ *
+ * @typeParam T - Expected response payload type.
+ * @param response - Direct response value or legacy response wrapper.
+ * @returns The response payload without a legacy wrapper.
  */
-const responseValue = <T>(response: T | { body: T }): T => {
+const responseValue = <T>(response: T | {
+  /** API payload wrapper used by older client-node response versions. */
+  body: T;
+}): T => {
   if (
     isRecord(response) &&
     'body' in response &&
@@ -349,6 +461,14 @@ const responseValue = <T>(response: T | { body: T }): T => {
   return response as T;
 };
 
+/**
+ * Lists resources of one kind from the selected cluster and namespace scope.
+ *
+ * @param kind - Kubernetes resource collection to list.
+ * @param namespace - Namespace name, or `all` to list across namespaces.
+ * @param clients - API clients bound to the selected cluster context.
+ * @returns The Kubernetes list response for the requested resource kind.
+ */
 const readResources = async (
   kind: ResourceKind,
   namespace: string,
@@ -459,6 +579,15 @@ const readResources = async (
   }
 };
 
+/**
+ * Reads a named Kubernetes resource using the API associated with its kind.
+ *
+ * @param kind - Kubernetes resource collection containing the object.
+ * @param namespace - Namespace containing the object, when namespaced.
+ * @param name - Kubernetes object name.
+ * @param clients - API clients bound to the selected cluster context.
+ * @returns The requested Kubernetes object.
+ */
 const readResource = async (
   kind: ResourceKind,
   namespace: string,
@@ -565,8 +694,21 @@ const readResource = async (
   }
 };
 
+/**
+ * Executes validated kubectl arguments without invoking a shell.
+ *
+ * @param args - Argument vector passed directly to the kubectl executable.
+ * @returns Captured stdout, stderr, and process exit code.
+ */
 const executeKubectl = (args: string[]) => {
-  return new Promise<{ stdout: string; stderr: string; exitCode: number }>((resolve, reject) => {
+  return new Promise<{
+    /** Standard output captured from the kubectl process. */
+    stdout: string;
+    /** Standard error captured from the kubectl process. */
+    stderr: string;
+    /** Process exit code, where zero indicates success. */
+    exitCode: number;
+  }>((resolve, reject) => {
     execFile(
       'kubectl',
       args,
@@ -591,6 +733,12 @@ const executeKubectl = (args: string[]) => {
   });
 };
 
+/**
+ * Resolves a command executable by searching the current process PATH.
+ *
+ * @param command - Executable name to locate.
+ * @returns Absolute executable path, or an empty string when it is not found.
+ */
 const resolveCommandPath = async (command: string): Promise<string> => {
   const pathEntries = (process.env.PATH || '').split(path.delimiter);
   const extensions = process.platform === 'win32'
@@ -617,11 +765,26 @@ const resolveCommandPath = async (command: string): Promise<string> => {
   return '';
 };
 
+/**
+ * Checks whether a command can be launched and returns its resolved executable path.
+ *
+ * @param command - Executable name to invoke.
+ * @param args - Arguments used for the availability probe.
+ * @param label - Human-readable tool name used in failure messages.
+ * @returns Availability, diagnostic text, and the executable path when available.
+ */
 const checkCommandAvailability = async (
   command: string,
   args: string[],
   label: string,
-): Promise<{ available: boolean; message: string; path: string }> => {
+): Promise<{
+  /** Whether the executable completed or returned a process exit code. */
+  available: boolean;
+  /** Empty on success, otherwise a user-facing reason the check failed. */
+  message: string;
+  /** Resolved executable path, or an empty string when unavailable. */
+  path: string;
+}> => {
   const executablePath = await resolveCommandPath(command);
   return new Promise((resolve) => {
     execFile(
@@ -646,6 +809,11 @@ const checkCommandAvailability = async (
   });
 };
 
+/**
+ * Checks availability and executable paths for kubectl, Docker, and kind in parallel.
+ *
+ * @returns The current availability result for all supported CLI tools.
+ */
 const checkCliToolsAvailability = async () => {
   const [kubectl, docker, kind] = await Promise.all([
     checkCommandAvailability('kubectl', ['version', '--client'], 'kubectl'),
@@ -656,6 +824,11 @@ const checkCliToolsAvailability = async () => {
   return { kubectl, docker, kind };
 };
 
+/**
+ * Combines persisted kubeconfig settings with fresh CLI executable detection.
+ *
+ * @returns Settings data consumed by the renderer's Settings view.
+ */
 const getSettingsInfo = async () => {
   const settings = await readSettings();
   return {
@@ -677,6 +850,7 @@ const getSettingsInfo = async () => {
   };
 };
 
+/** Registers IPC handlers for Kubernetes, CLI, and user-settings operations. */
 const registerKubernetesHandlers = () => {
   ipcMain.handle('cluster:checkCliTools', checkCliToolsAvailability);
   ipcMain.handle('cluster:getSettings', getSettingsInfo);
@@ -825,7 +999,10 @@ const registerKubernetesHandlers = () => {
           namespaces: namespaces.items || [],
           resources: kinds.reduce<Record<string, unknown[]>>(
             (acc, kind, index) => {
-              const list = lists[index] as { items?: unknown[] };
+              const list = lists[index] as {
+                /** Kubernetes objects returned by the collection list request. */
+                items?: unknown[];
+              };
               acc[kind] = list.items || [];
               return acc;
             },
@@ -945,6 +1122,12 @@ const registerKubernetesHandlers = () => {
   );
 };
 
+/**
+ * Resolves the platform-specific application icon bundled with the app.
+ *
+ * @param platform - Electron platform identifier for the running process.
+ * @returns Absolute path to the matching ICO, ICNS, or PNG file.
+ */
 const appIconPath = (platform: NodeJS.Platform): string => {
   const basePath = app.getAppPath();
 
@@ -959,15 +1142,24 @@ const appIconPath = (platform: NodeJS.Platform): string => {
   return path.join(basePath, 'src', 'icon.png');
 };
 
+/** Native application icon loaded for the current platform. */
 const icon = nativeImage.createFromPath(
   appIconPath(process.platform)
 );
 
+/**
+ * Builds the platform-appropriate application menu and installs it in Electron.
+ *
+ * @param mainWindow - Window receiving native About and Settings menu events.
+ * @returns Nothing; installs the menu as Electron's application menu.
+ */
 const createApplicationMenu = (mainWindow: BrowserWindow) => {
+  /** Creates the product-specific About menu item and its renderer event. */
   const aboutMenuItem = () => ({
     label: `About ${packageMetadata.productName}`,
     click: () => mainWindow.webContents.send('app:show-about'),
   });
+  /** Creates the Settings menu item and its renderer event. */
   const settingsMenuItem = () => ({
     label: 'Settings',
     click: () => mainWindow.webContents.send('app:show-settings'),
@@ -1047,6 +1239,7 @@ const createApplicationMenu = (mainWindow: BrowserWindow) => {
   Menu.setApplicationMenu(menu);
 };
 
+/** Creates, configures, and displays the main application window. */
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -1078,6 +1271,7 @@ const createWindow = () => {
 
 app.setName(packageMetadata.productName);
 
+/** Supplies static package metadata to the renderer's About view. */
 ipcMain.handle('app:getAbout', () => ({
   productName: packageMetadata.productName,
   version: packageMetadata.version,
@@ -1100,25 +1294,21 @@ ipcMain.handle('dark-mode:system', () => {
 })
 
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
+/** Registers Kubernetes IPC handlers and opens the main window after Electron initializes. */
 app.on('ready', () => {
   registerKubernetesHandlers();
   createWindow();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for application and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
+/** Quits on non-macOS platforms after the final application window closes. */
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
+/** Recreates the main window on macOS when the dock icon is activated with no windows open. */
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the dock icon
-  // is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }

@@ -1,12 +1,19 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+/** Unit JSON input, E2E JSON input, and Markdown output paths from the CLI. */
 const [unitReportPath, e2eReportPath, outputPath] = process.argv.slice(2);
 
 if (!unitReportPath || !e2eReportPath || !outputPath) {
   throw new Error('Usage: node scripts/test-reports-to-markdown.js <unit.json> <e2e.json> <output.md>');
 }
 
+/**
+ * Reads a JSON report when present, returning null when it is missing or invalid.
+ *
+ * @param {string} filePath - Report file to parse.
+ * @returns {object|null} Parsed JSON report, or null when parsing fails.
+ */
 const readJson = (filePath) => {
   try {
     return JSON.parse(fs.readFileSync(filePath, 'utf8'));
@@ -15,11 +22,23 @@ const readJson = (filePath) => {
   }
 };
 
+/**
+ * Escapes a value for safe inclusion in a Markdown table cell.
+ *
+ * @param {*} value - Value to render as text.
+ * @returns {string} Single-line Markdown cell content.
+ */
 const escapeCell = (value) => String(value ?? '')
   .replace(/\|/g, '\\|')
   .replace(/[\r\n]+/g, ' ')
   .trim();
 
+/**
+ * Formats a duration in milliseconds for concise test-report display.
+ *
+ * @param {number} milliseconds - Duration reported by the test runner.
+ * @returns {string} Millisecond or second display, or `-` for invalid durations.
+ */
 const formatDuration = (milliseconds) => {
   if (!Number.isFinite(milliseconds)) {
     return '-';
@@ -30,6 +49,12 @@ const formatDuration = (milliseconds) => {
     : `${(milliseconds / 1000).toFixed(2)} s`;
 };
 
+/**
+ * Wraps failure output in a collapsible Markdown details block.
+ *
+ * @param {*} message - Failure message or stack trace.
+ * @returns {string} Collapsible Markdown containing the failure text.
+ */
 const formatFailure = (message) => {
   const safeMessage = String(message ?? 'Unknown failure')
     .replace(/```/g, "'''")
@@ -37,6 +62,11 @@ const formatFailure = (message) => {
   return `\n\n<details><summary>Failure details</summary>\n\n\`\`\`text\n${safeMessage}\n\`\`\`\n\n</details>`;
 };
 
+/**
+ * Renders test rows as a Markdown status, name, and duration table.
+ * @param {{status: string, title: string, duration: string}[]} rows - Test rows to render.
+ * @returns {string} Markdown table or an empty-report placeholder.
+ */
 const renderCaseTable = (rows) => {
   if (!rows.length) {
     return '_No test cases were reported._';
@@ -49,11 +79,21 @@ const renderCaseTable = (rows) => {
   ].join('\n');
 };
 
+/**
+ * Counts test rows by their display status.
+ * @param {{status: string}[]} rows - Test rows to count.
+ * @returns {Record<string, number>} Counts grouped by status label.
+ */
 const statusCounts = (rows) => rows.reduce((counts, row) => {
   counts[row.status] = (counts[row.status] || 0) + 1;
   return counts;
 }, {});
 
+/**
+ * Formats the overall case totals by status for a report section.
+ * @param {{status: string}[]} rows - Test rows represented by the summary.
+ * @returns {string} Markdown summary of total, passed, failed, flaky, and skipped cases.
+ */
 const renderSummary = (rows) => {
   const counts = statusCounts(rows);
   const parts = ['Passed', 'Failed', 'Flaky', 'Skipped']
@@ -88,6 +128,13 @@ for (const file of unitReport?.testResults || []) {
 const e2eRows = [];
 const e2eFailures = [];
 
+/**
+ * Recursively collects Playwright spec records from a nested suite tree.
+ *
+ * @param {object} suite - Playwright JSON suite node.
+ * @param {string[]} [parentTitles=[]] - Enclosing suite titles for full test names.
+ * @returns {void} Appends cases and failure details to the report collections.
+ */
 const visitSuite = (suite, parentTitles = []) => {
   const suiteTitle = suite.title && suite.title !== path.basename(suite.file || '')
     ? [...parentTitles, suite.title]
@@ -126,6 +173,13 @@ for (const suite of e2eReport?.suites || []) {
   visitSuite(suite);
 }
 
+/**
+ * Renders failure entries beneath a Markdown subsection.
+ *
+ * @param {string} heading - Section heading for the runner's failures.
+ * @param {{title: string, message: string}[]} failures - Failure entries to render.
+ * @returns {string} Markdown failure section, or an empty string when there are none.
+ */
 const renderFailures = (heading, failures) => {
   if (!failures.length) {
     return '';

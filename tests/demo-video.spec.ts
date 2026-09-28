@@ -1,3 +1,4 @@
+/** Local-only Playwright recording of the primary cluster-browsing workflow. */
 import { test, expect } from '@playwright/test';
 
 // Record the complete browser interaction so the resulting artifact can be
@@ -51,6 +52,6 @@ test.describe('demo video flow', () => {
       throw new Error('Playwright video recording is unavailable.');
     }
     await page.context().close();
-    await video.saveAs('docs/snapshots/video.webm');
+    await video.saveAs('assets/snapshots/video.webm');
   });
 });

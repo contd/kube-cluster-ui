@@ -1,5 +1,7 @@
+/** Playwright end-to-end coverage for navigation, resources, settings, and dashboard workflows. */
 import { test, expect, type Page } from '@playwright/test';
 
+/** Resource navigation cases paired with their generated screenshot names. */
 const views = [
   ['Nodes', 'nodes', '02-nodes'],
   ['Namespaces', 'namespaces', '03-namespaces'],
@@ -25,6 +27,7 @@ const views = [
   ['Events', 'events', '18-events'],
 ] as const;
 
+/** Expected table headings keyed by the resource kind used in navigation tests. */
 const expectedColumns: Record<string, string[]> = {
   nodes: ['Name', 'Status', 'Roles', 'Taints', 'Version', 'CPU', 'Memory', 'Age'],
   pods: ['Name', 'Namespace', 'Age', 'Containers', 'Status', 'Restarts', 'Node', 'Controlled By'],
@@ -50,6 +53,18 @@ const expectedColumns: Record<string, string[]> = {
   namespaces: ['Name', 'Status', 'Age', 'Labels'],
 };
 
+/**
+ * Opens a resource navigation entry, expanding its group first when necessary.
+ * @param page - Playwright page containing the application.
+ * @param kind - Navigation item data-kind value to activate.
+ * @returns A promise that resolves after the view has been selected.
+ */
+/**
+ * Opens a resource navigation entry, expanding its group first when necessary.
+ * @param page - Playwright page containing the application.
+ * @param kind - Navigation item data-kind value to activate.
+ * @returns A promise that resolves after the view has been selected.
+ */
 async function openNavigationItem(page: Page, kind: string): Promise<void> {
   const item = page.locator(`.nav-item[data-kind="${kind}"]`);
   if (!(await item.isVisible())) {
@@ -58,6 +73,20 @@ async function openNavigationItem(page: Page, kind: string): Promise<void> {
   await item.click();
 }
 
+/**
+ * Verifies that a CLI status item exposes its expected CSS tooltip on hover.
+ * @param page - Playwright page containing the status bar.
+ * @param selector - Locator selector for the CLI status item.
+ * @param text - Expected tooltip text.
+ * @returns A promise that resolves when tooltip content and visibility match.
+ */
+/**
+ * Verifies that a CLI status item exposes its expected CSS tooltip on hover.
+ * @param page - Playwright page containing the status bar.
+ * @param selector - Locator selector for the CLI status item.
+ * @param text - Expected tooltip text.
+ * @returns A promise that resolves when tooltip content and visibility match.
+ */
 async function expectCliTooltip(page: Page, selector: string, text: string): Promise<void> {
   const tool = page.locator(selector);
   await tool.hover();
@@ -98,7 +127,7 @@ test.describe('Kube Cluster UI views', () => {
       await expect(page.locator('table')).toBeVisible();
       await expect(page.locator('tbody tr')).not.toHaveCount(0);
       await page.screenshot({
-        path: `docs/snapshots/${snapshotName}.png`,
+        path: `assets/snapshots/${snapshotName}.png`,
         fullPage: true,
       });
     });
@@ -115,7 +144,7 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('.summary-grid')).toBeVisible();
     await expect(page.locator('.summary-card')).toHaveCount(4);
     await expect(page.locator('table')).toHaveCount(0);
-    await page.screenshot({ path: 'docs/snapshots/01-dashboard.png', fullPage: true });
+    await page.screenshot({ path: 'assets/snapshots/01-dashboard.png', fullPage: true });
   });
 
   test('Settings view renders configuration and CLI paths', async ({ page }) => {
@@ -125,7 +154,7 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('#kubeconfig-search-path')).toHaveValue('/tmp/playwright-kubeconfig');
     await expect(page.locator('#cli-executable-paths')).toHaveJSProperty('readOnly', true);
     await expect(page.locator('#cli-executable-paths')).toContainText('/usr/local/bin/kubectl');
-    await page.screenshot({ path: 'docs/snapshots/25-settings.png', fullPage: true });
+    await page.screenshot({ path: 'assets/snapshots/25-settings.png', fullPage: true });
   });
 
   test('Settings view renders editable saved kubeconfigs', async ({ page }) => {
@@ -137,7 +166,7 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('.saved-kubeconfig-input')).toHaveCount(1);
     await expect(page.locator('.saved-kubeconfig-input')).toBeEditable();
     await page.screenshot({
-      path: 'docs/snapshots/26-settings-saved-kubeconfigs.png',
+      path: 'assets/snapshots/26-settings-saved-kubeconfigs.png',
       fullPage: true,
     });
   });
@@ -227,7 +256,7 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('#kubectl-run')).toBeDisabled();
     await expect(page.locator('#kubectl-output-toggle')).toBeDisabled();
     await expect(page.locator('#kubectl-clear-history')).toBeDisabled();
-    await page.screenshot({ path: 'docs/snapshots/19-kubectl-unavailable.png', fullPage: true });
+    await page.screenshot({ path: 'assets/snapshots/19-kubectl-unavailable.png', fullPage: true });
   });
 
   test('marks Docker and kind unavailable without disabling the terminal', async ({ page }) => {
@@ -257,6 +286,7 @@ test.describe('Kube Cluster UI views', () => {
   test('runs kubectl with the selected context and highlights its output', async ({ page }) => {
     await page.addInitScript(() => {
       const mockKubeApi: Partial<NonNullable<Window['kubeApi']>> = {
+        /** @param contextId - Mock context identifier to select. */
         setContext: async (contextId) => ({
           defaultPath: '/tmp/kubeconfig',
           contexts: [
@@ -283,6 +313,7 @@ test.describe('Kube Cluster UI views', () => {
           ],
           selectedContextId: contextId,
         }),
+        /** @returns Both mock contexts and the default selection. */
         getContexts: async () => ({
           defaultPath: '/tmp/kubeconfig',
           contexts: [
@@ -309,17 +340,29 @@ test.describe('Kube Cluster UI views', () => {
           ],
           selectedContextId: 'test-config::dev',
         }),
+        /** @returns Successful availability for all three CLI tools. */
         checkCliTools: async () => ({
           kubectl: { available: true, message: '' },
           docker: { available: true, message: '' },
           kind: { available: true, message: '' },
         }),
+        /**
+         * Returns the mock cluster snapshot for the selected context.
+         * @param _namespace - Requested namespace; the fixture has no namespaces.
+         * @param contextId - Optional mock context identifier.
+         * @returns Snapshot with live mode and deterministic empty collections.
+         */
         getSnapshot: async (_namespace, contextId) => ({
           context: contextId === 'test-config::prod' ? 'prod' : 'dev',
           mode: 'live' as const,
           namespaces: [],
           resources: {},
         }),
+        /**
+         * Returns representative YAML output and records which context was used.
+         * @param command - Command text submitted by the renderer.
+         * @param contextId - Context identifier supplied to the command runner.
+         */
         runKubectl: async (command, contextId) => {
           document.documentElement.dataset.lastKubectlCommand = command;
           document.documentElement.dataset.lastKubectlContext = contextId || '';
@@ -499,7 +542,7 @@ test.describe('Kube Cluster UI views', () => {
     await expect(page.locator('#kubectl-command')).toBeEnabled();
     await expect(page.locator('table')).toHaveCount(0);
     await page.screenshot({
-      path: 'docs/main-interface.png',
+      path: 'assets/main-interface.png',
       fullPage: true,
     });
   });
@@ -510,7 +553,7 @@ test.describe('Kube Cluster UI views', () => {
     await page.locator('#theme-toggle').click();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.screenshot({
-      path: 'docs/main-interface-dark.png',
+      path: 'assets/main-interface-dark.png',
       fullPage: true,
     });
   });

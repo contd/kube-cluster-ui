@@ -1,4 +1,4 @@
 import { defineConfig } from 'vite';
 
-// https://vitejs.dev/config
+/** Vite configuration for the browser-based Electron renderer. */
 export default defineConfig({});

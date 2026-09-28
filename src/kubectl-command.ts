@@ -1,6 +1,12 @@
+/** Shell-free parsing and validation for commands submitted to the kubectl terminal. */
 import path from 'node:path';
 
-/** Parses a kubectl command line into arguments without invoking a shell. */
+/**
+ * Parses a kubectl command line into arguments without invoking a shell.
+ * @param command - User-entered kubectl command text, optionally prefixed by `k`.
+ * @returns Argument vector safe to pass to `execFile`.
+ * @throws Error when quoting is incomplete, the command is empty, or context overrides are present.
+ */
 export function parseKubectlCommand(command: string): string[] {
   const args: string[] = [];
   let token = '';

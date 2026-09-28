@@ -8,8 +8,10 @@ import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { app } from 'electron';
 import path from 'node:path';
 
+/** Shared icon basename consumed by the platform-specific Forge makers. */
 const customIconPath = path.resolve(__dirname, 'src', 'icon');
 
+/** Electron Forge packaging, maker, publisher, Vite, and security-fuse configuration. */
 const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
@@ -42,6 +44,7 @@ const config: ForgeConfig = {
     {
       name: '@electron-forge/maker-dmg',
       platforms: ['darwin'],
+      /** Supplies the macOS ICNS asset to the DMG maker. */
       config: () => ({
         icon: path.resolve(__dirname, 'src', 'icon.icns'),
       })

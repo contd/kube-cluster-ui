@@ -75,6 +75,35 @@ jobs:
           path: reports/e2e
           if-no-files-found: warn
 
+  generate-docs:
+    name: Generate API documentation
+    runs-on: ubuntu-22.04
+    needs: [test-unit, test-e2e]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate TypeDoc documentation
+        run: npm run docs
+
+      - name: Upload generated documentation
+        uses: actions/upload-artifact@v4
+        with:
+          name: typedoc-documentation
+          path: docs
+
   publish-test-reports:
     name: Publish test reports to wiki
     runs-on: ubuntu-22.04
@@ -294,3 +323,47 @@ jobs:
             !**/*.blockmap
           draft: false
           generate_release_notes: true
+
+  upload-pages:
+    name: Upload Pages artifact
+    runs-on: ubuntu-22.04
+    needs: [test-unit, test-e2e]
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application bundles
+        run: npm run package:builder
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kube-cluster-ui-pages
+          path: docs
+
+deploy-docs:
+  name: Deploy GitHub Pages
+  runs-on: ubuntu-22.04
+  needs: generate-docs
+  permissions:
+    pages: write
+    id-token: write
+  environment:
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+  steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4

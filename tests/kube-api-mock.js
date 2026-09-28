@@ -1,17 +1,38 @@
+/**
+ * Installs deterministic Kubernetes and application APIs for browser tests.
+ * The fixture avoids kubectl, kubeconfig files, and live-cluster dependencies.
+ */
 (() => {
   const creationTimestamp = '2026-09-20T12:00:00.000Z';
+  /**
+    * Creates standard metadata for a mocked Kubernetes object.
+    *
+   * @param {string} name - Object name.
+   * @param {string} [namespace='default'] - Namespace, or an empty string for cluster-scoped objects.
+   * @returns {object} Kubernetes metadata fixture.
+   */
   const metadata = (name, namespace = 'default') => ({
     name,
     namespace,
     creationTimestamp,
     labels: { app: name },
   });
+  /**
+    * Creates a mocked Kubernetes resource with its metadata and supplied fields.
+    *
+   * @param {string} kind - Kubernetes resource kind.
+   * @param {string} name - Object name.
+   * @param {object} [details={}] - Additional API fields to merge into the resource.
+   * @param {string} [namespace='default'] - Namespace, or an empty string for cluster-scoped objects.
+   * @returns {object} Mock Kubernetes resource.
+   */
   const resource = (kind, name, details = {}, namespace = 'default') => ({
     kind,
     metadata: metadata(name, namespace),
     ...details,
   });
 
+  /** Context list returned by the mocked kubeconfig API. */
   const contexts = [{
     id: 'playwright::test-cluster',
     name: 'test-cluster',
@@ -23,11 +44,13 @@
     isCurrent: true,
   }];
 
+  /** Namespace fixtures shared by the snapshot and resource-list endpoints. */
   const namespaces = [
     resource('Namespace', 'default', { status: { phase: 'Active' } }),
     resource('Namespace', 'system', { status: { phase: 'Active' } }),
   ];
 
+  /** Deterministic collections used by resource-view browser tests. */
   const resources = {
     nodes: [resource('Node', 'test-node', {
       metadata: {
@@ -141,12 +164,14 @@
     })],
   };
 
+  /** Base connected-cluster snapshot returned by the mock preload bridge. */
   const snapshot = {
     context: 'test-cluster',
     mode: 'live',
     namespaces,
     resources,
   };
+  /** Collections omitted from the initial snapshot and fetched on demand. */
   const onDemandResources = [
     'namespaces',
     'replicasets',
@@ -173,7 +198,9 @@
     kind: { available: true, message: '', path: '/usr/local/bin/kind' },
   };
 
+  /** Preload API mock consumed by the renderer during browser tests. */
   window.kubeApi = {
+    /** @returns {Promise<object>} Available contexts and the selected context identifier. */
     getContexts: async () => ({
       defaultPath: '/tmp/playwright-kubeconfig',
       contexts: contexts.map((context) => ({
@@ -182,10 +209,21 @@
       })),
       selectedContextId,
     }),
+    /**
+     * Selects a mock context and returns the refreshed context list.
+     * @param {string} contextId - Context identifier to activate.
+     * @returns {Promise<object>} Updated context state.
+     */
     setContext: async (contextId) => {
       selectedContextId = contextId;
       return window.kubeApi.getContexts();
     },
+    /**
+     * Returns a cloned mock snapshot with on-demand collections omitted.
+     * @param {string} _namespace - Requested namespace (unused by this fixture).
+     * @param {string} [contextId] - Optional selected context identifier.
+     * @returns {Promise<object>} Snapshot bound to the requested mock context.
+     */
     getSnapshot: async (_namespace, contextId) => {
       const result = JSON.parse(JSON.stringify(snapshot));
       for (const kind of onDemandResources) {
@@ -196,7 +234,16 @@
         context: contexts.find((context) => context.id === (contextId || selectedContextId))?.name || 'test-cluster',
       };
     },
+    /** @param {string} kind - Resource kind whose fixture collection is requested. */
     getResources: async (kind) => resources[kind] || [],
+    /**
+     * Finds a named fixture resource in a namespace.
+     * @param {string} kind - Resource kind to search.
+     * @param {string} namespace - Namespace containing the resource.
+     * @param {string} name - Resource name to locate.
+     * @returns {Promise<object>} Matching resource fixture.
+     * @throws Error when no matching fixture exists.
+     */
     getResource: async (kind, namespace, name) => {
       const match = (resources[kind] || []).find((item) =>
         item.metadata.name === name && (item.metadata.namespace || 'default') === namespace,
@@ -206,6 +253,7 @@
       }
       return match;
     },
+    /** Adds a pasted kubeconfig fixture for Settings-view tests. */
     addKubeconfig: async (kubeconfig) => {
       savedKubeconfigs.push({
         id: `saved-config-${savedKubeconfigs.length + 1}`,
@@ -218,14 +266,23 @@
         selectedContextId,
       };
     },
+    /** @returns {Promise<object>} Deterministic CLI availability and paths. */
     checkCliTools: async () => ({
       ...cliToolsAvailability,
     }),
+    /** @returns {Promise<object>} Current path, saved configs, and CLI availability. */
     getSettings: async () => ({ kubeconfigSearchPath, savedKubeconfigs, cliToolsAvailability }),
+    /** @param {string} searchPath - New mock kubeconfig search path. */
     setKubeconfigSearchPath: async (searchPath) => {
       kubeconfigSearchPath = searchPath;
       return { kubeconfigSearchPath, savedKubeconfigs, cliToolsAvailability };
     },
+    /**
+     * Replaces a saved config fixture's YAML document.
+     * @param {string} id - Saved kubeconfig identifier.
+     * @param {string} kubeconfig - Replacement YAML document.
+     * @returns {Promise<object>} Updated mock settings.
+     */
     updateSavedKubeconfig: async (id, kubeconfig) => {
       const index = savedKubeconfigs.findIndex((item) => item.id === id);
       if (index >= 0) {
@@ -236,15 +293,21 @@
     runKubectl: async () => ({ stdout: '', stderr: '', exitCode: 0 }),
   };
 
+    /** @returns {Promise<object>} Empty successful kubectl command result. */
+  /** Application information and native-menu event mock used in browser tests. */
   window.appInfo = {
     getAbout: async () => ({
+  /** Application metadata fixture returned by the mocked About API. */
       productName: 'Kube Cluster UI',
+    /** @returns {Promise<object>} Static product details used by the About view. */
       version: '2.5.0',
       repository: { type: 'git', url: 'https://github.com/contd/kube-cluster-ui.git' },
       description: 'A Kubernetes cluster browser inspired by LENS.',
       author: { name: 'Kube Cluster UI', email: '' },
     }),
+    /** @param {Function} listener - Callback to invoke for About menu requests. */
     onShowAbout: (listener) => window.addEventListener('app:show-about', listener),
+    /** @param {Function} listener - Callback to invoke for Settings menu requests. */
     onShowSettings: (listener) => window.addEventListener('app:show-settings', listener),
   };
 

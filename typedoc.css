@@ -1,0 +1,13 @@
+.tsd-toolbar-contents a.title {
+  display: inline-block;
+  width: 2rem;
+  height: 2rem;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+  background: url("favicon.svg") center / contain no-repeat;
+}
+
+:root[data-theme="dark"] .tsd-toolbar-contents a.title {
+  filter: invert(1);
+}

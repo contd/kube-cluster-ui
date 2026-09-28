@@ -30,7 +30,7 @@
     "test:e2e": "playwright test && npm run generate:video-preview",
     "test:unit": "vitest run",
     "test": "vitest run && npm run test:e2e",
-    "docs": "typedoc --entryPointStrategy expand --skipErrorChecking --out docs src",
+    "docs": "typedoc --entryPointStrategy expand --skipErrorChecking --favicon src/favicon.svg --customCss typedoc.css --out docs src",
     "generate:video-preview": "node scripts/generate-video-preview.js"
   },
   "license": "MIT",

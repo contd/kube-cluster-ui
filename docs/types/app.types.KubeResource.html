@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>KubeResource | kube-cluster-ui</title><meta name="description" content="Documentation for kube-cluster-ui"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>KubeResource | kube-cluster-ui</title><link rel="icon" href="../assets/favicon.svg" type="image/svg+xml"/><meta name="description" content="Documentation for kube-cluster-ui"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">kube-cluster-ui</a>
 <div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -16,7 +16,7 @@
 </div></section>
 <div class="tsd-signature"><span class="tsd-signature-keyword">type</span> <span class="tsd-kind-type-alias">KubeResource</span> <span class="tsd-signature-symbol">=</span> <span class="tsd-signature-symbol">{</span><br/>    <a class="tsd-kind-property" href="#apiversion">apiVersion</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#count">count</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#data">data</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#involvedobject">involvedObject</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">namespace</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#kind">kind</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#lasttimestamp">lastTimestamp</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#message">message</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#metadata">metadata</a><span class="tsd-signature-symbol">?:</span> <a href="app.types.Metadata.html" class="tsd-signature-type tsd-kind-type-alias">Metadata</a><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#provisioner">provisioner</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#reason">reason</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#roleref">roleRef</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">apiGroup</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#rules">rules</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#secrets">secrets</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#spec">spec</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#status">status</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#subjects">subjects</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span><span class="tsd-signature-symbol">;</span><br/>    <a class="tsd-kind-property" href="#type">type</a><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span><br/><span class="tsd-signature-symbol">}</span></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L73">app.types.ts:73</a></li></ul></aside>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L73">app.types.ts:73</a></li></ul></aside>
 <section class="tsd-panel-group tsd-index-group">
 <section class="tsd-panel tsd-index-panel">
 <details class="tsd-index-content tsd-accordion" open><summary class="tsd-accordion-summary tsd-index-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-chevronDown"></use></svg>
@@ -51,21 +51,21 @@
 <div class="tsd-comment tsd-typography"><p>Kubernetes API version that owns the resource kind.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L75">app.types.ts:75</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L75">app.types.ts:75</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="count"><code class="tsd-tag">Optional</code><span>count</span><a href="#count" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">count</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">number</span></div>
 <div class="tsd-comment tsd-typography"><p>Number of times the event has been observed.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L119">app.types.ts:119</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L119">app.types.ts:119</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="data"><code class="tsd-tag">Optional</code><span>data</span><a href="#data" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">data</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>String data entries exposed by ConfigMaps and Secrets.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L89">app.types.ts:89</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L89">app.types.ts:89</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="involvedobject"><code class="tsd-tag">Optional</code><span>involved<wbr/>Object</span><a href="#involvedobject" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">involvedObject</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">namespace</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span></div>
@@ -87,49 +87,49 @@
 <div class="tsd-comment tsd-typography"><p>Namespace of the referenced object, when namespaced.</p>
 </div></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L106">app.types.ts:106</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L106">app.types.ts:106</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="kind"><code class="tsd-tag">Optional</code><span>kind</span><a href="#kind" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Kubernetes kind name, such as Pod or Deployment.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L77">app.types.ts:77</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L77">app.types.ts:77</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="lasttimestamp"><code class="tsd-tag">Optional</code><span>last<wbr/>Timestamp</span><a href="#lasttimestamp" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">lastTimestamp</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Most recent event timestamp in ISO format.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L121">app.types.ts:121</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L121">app.types.ts:121</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="message"><code class="tsd-tag">Optional</code><span>message</span><a href="#message" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">message</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Human-readable event message.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L117">app.types.ts:117</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L117">app.types.ts:117</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="metadata"><code class="tsd-tag">Optional</code><span>metadata</span><a href="#metadata" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">metadata</span><span class="tsd-signature-symbol">?:</span> <a href="app.types.Metadata.html" class="tsd-signature-type tsd-kind-type-alias">Metadata</a></div>
 <div class="tsd-comment tsd-typography"><p>Standard Kubernetes object metadata.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L83">app.types.ts:83</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L83">app.types.ts:83</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="provisioner"><code class="tsd-tag">Optional</code><span>provisioner</span><a href="#provisioner" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">provisioner</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Storage provisioner associated with a StorageClass.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L81">app.types.ts:81</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L81">app.types.ts:81</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="reason"><code class="tsd-tag">Optional</code><span>reason</span><a href="#reason" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">reason</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Event reason reported by the Kubernetes API.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L115">app.types.ts:115</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L115">app.types.ts:115</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="roleref"><code class="tsd-tag">Optional</code><span>role<wbr/>Ref</span><a href="#roleref" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">roleRef</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-symbol">{</span> <span class="tsd-kind-property">apiGroup</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">kind</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">;</span> <span class="tsd-kind-property">name</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span> <span class="tsd-signature-symbol">}</span></div>
@@ -151,49 +151,49 @@
 <div class="tsd-comment tsd-typography"><p>Referenced Role or ClusterRole name.</p>
 </div></li></ul></div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L97">app.types.ts:97</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L97">app.types.ts:97</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="rules"><code class="tsd-tag">Optional</code><span>rules</span><a href="#rules" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">rules</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Policy rules attached to a Role or ClusterRole.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L93">app.types.ts:93</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L93">app.types.ts:93</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="secrets"><code class="tsd-tag">Optional</code><span>secrets</span><a href="#secrets" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">secrets</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Secret references attached to a ServiceAccount.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L91">app.types.ts:91</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L91">app.types.ts:91</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="spec"><code class="tsd-tag">Optional</code><span>spec</span><a href="#spec" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">spec</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Resource specification fields returned by the Kubernetes API.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L87">app.types.ts:87</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L87">app.types.ts:87</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="status"><code class="tsd-tag">Optional</code><span>status</span><a href="#status" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">status</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">Record</span><span class="tsd-signature-symbol">&lt;</span><span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">,</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">&gt;</span></div>
 <div class="tsd-comment tsd-typography"><p>Resource status fields returned by the Kubernetes API.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L85">app.types.ts:85</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L85">app.types.ts:85</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="subjects"><code class="tsd-tag">Optional</code><span>subjects</span><a href="#subjects" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">subjects</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">unknown</span><span class="tsd-signature-symbol">[]</span></div>
 <div class="tsd-comment tsd-typography"><p>Subjects attached to a RoleBinding or ClusterRoleBinding.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L95">app.types.ts:95</a></li></ul></aside></section>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L95">app.types.ts:95</a></li></ul></aside></section>
 <section class="tsd-panel tsd-member">
 <h3 class="tsd-anchor-link" id="type"><code class="tsd-tag">Optional</code><span>type</span><a href="#type" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <div class="tsd-signature"><span class="tsd-kind-property">type</span><span class="tsd-signature-symbol">?:</span> <span class="tsd-signature-type">string</span></div>
 <div class="tsd-comment tsd-typography"><p>Resource type or Event type, depending on the API object.</p>
 </div><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/246fd070b5b2f2b556cc469fd0c70df42318da48/src/app.types.ts#L79">app.types.ts:79</a></li></ul></aside></section></section></details></div>
+<li>Defined in <a href="https://github.com/contd/kube-cluster-ui/blob/bbdb220269745e8fe1c1a00569ec323d5150f5c1/src/app.types.ts#L79">app.types.ts:79</a></li></ul></aside></section></section></details></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

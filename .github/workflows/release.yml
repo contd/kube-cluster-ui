@@ -98,10 +98,9 @@ jobs:
       - name: Generate TypeDoc documentation
         run: npm run docs
 
-      - name: Upload generated documentation
-        uses: actions/upload-artifact@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          name: typedoc-documentation
           path: docs
 
   publish-test-reports:
@@ -324,46 +323,17 @@ jobs:
           draft: false
           generate_release_notes: true
 
-  upload-pages:
-    name: Upload Pages artifact
+  deploy-docs:
+    name: Deploy GitHub Pages
     runs-on: ubuntu-22.04
-    needs: [test-unit, test-e2e]
+    needs: generate-docs
     permissions:
-      contents: write
-
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v5
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build application bundles
-        run: npm run package:builder
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kube-cluster-ui-pages
-          path: docs
-
-deploy-docs:
-  name: Deploy GitHub Pages
-  runs-on: ubuntu-22.04
-  needs: generate-docs
-  permissions:
-    pages: write
-    id-token: write
-  environment:
-    name: github-pages
-    url: ${{ steps.deployment.outputs.page_url }}
-  steps:
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

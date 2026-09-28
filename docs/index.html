@@ -18,10 +18,10 @@
 <p>Browse resources, inspect manifests, switch contexts, and run context-bound <code>kubectl</code> commands from one application. The project is built with Electron and TypeScript, and is available for Windows, macOS, and Linux.</p>
 <h2 id="project-support" class="tsd-anchor-link">Project Support<a href="#project-support" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Kube Cluster UI is currently supported by:</p>
-<ul>
-<li>Apex Industrial Technologies</li>
-<li>Veratas Automata</li>
-</ul>
+<img src="https://apex-industrial.com/wp-content/uploads/2021/10/ApexSCT_Small_Reverse_Dark_Small_Reverse.svg" width="200">
+<p><a href="https://www.apexsupplychain.com">Apex Supply Chain Technologies</a></p>
+<img src="https://veritasautomata.com/wp-content/uploads/2023/11/Veritas-Automata-Logo.png" width="200">
+<p><a href="https://veritasautomata.com/">Veratas Automata</a></p>
 <h2 id="downloads-and-links" class="tsd-anchor-link">Downloads and Links<a href="#downloads-and-links" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
 <p>Download the latest packaged release for your platform:</p>
 <ul>
@@ -92,9 +92,6 @@
 </ul>
 <hr>
 <h2 id="development" class="tsd-anchor-link">Development<a href="#development" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
-<blockquote>
-<p>For windows users see <a href="media/WIN-BUILD.md">WIN-BUILD.md</a>.</p>
-</blockquote>
 <h3 id="install-dependencies" class="tsd-anchor-link">Install dependencies<a href="#install-dependencies" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
 <p>From the project root:</p>
 <pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span>
@@ -133,6 +130,56 @@
 <pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">install</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">start</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">package:builder</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:e2e</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test:unit</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">generate:video-preview</span><br/><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">test</span>
 </code><button type="button">Copy</button></pre>
 
+<hr>
+<h2 id="build-and-package-for-windows" class="tsd-anchor-link">Build and Package for Windows<a href="#build-and-package-for-windows" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2>
+<p>On a Windows machine, you can build and package the app into a Windows installer or distributable zip.</p>
+<blockquote>
+<p>Important: the Windows installer is produced on a Windows machine. The <code>MakerSquirrel</code> configuration is Windows-specific and is not meant to be run from a non-Windows host for native Windows packaging.</p>
+</blockquote>
+<h3 id="prerequisites" class="tsd-anchor-link">Prerequisites<a href="#prerequisites" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>Before building, install:</p>
+<ul>
+<li><code>Node.js</code> LTS (18+ recommended; current project targets <code>Electron</code> 44)</li>
+<li><code>Git</code> for <code>Windows</code></li>
+<li>A <code>Windows</code> environment such as <code>Windows</code> 10/11, or a <code>Windows</code> build VM/container</li>
+<li>Administrator access if you need to install dependencies or sign the installer</li>
+</ul>
+<h3 id="create-a-windows-installer" class="tsd-anchor-link">Create a Windows installer<a href="#create-a-windows-installer" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>To build the Windows distributable using the configured Forge makers:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">make</span>
+</code><button type="button">Copy</button></pre>
+
+<p>This uses Electron Forge with the Squirrel maker configured in <a href="media/forge.config.ts">forge.config.ts</a>. On Windows, this produces the installer artifacts in the <code>out/make</code> directory, typically under a path similar to:</p>
+<pre><code class="text">out\make\squirrel.windows\x64\
+</code><button type="button">Copy</button></pre>
+
+<p>The generated files usually include:</p>
+<ul>
+<li>the <code>.exe</code> installer</li>
+<li>a <code>.nupkg</code> package</li>
+<li>a ZIP archive if the project is configured to emit one</li>
+</ul>
+<h3 id="build-a-release-artifact-from-the-command-line" class="tsd-anchor-link">Build a release artifact from the command line<a href="#build-a-release-artifact-from-the-command-line" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<p>If you want to trigger a package build in a CI or release script, you can run:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">make</span>
+</code><button type="button">Copy</button></pre>
+
+<p>or, for a non-installer package only:</p>
+<pre><code class="bash"><span class="hl-0">npm</span><span class="hl-1"> </span><span class="hl-2">run</span><span class="hl-1"> </span><span class="hl-2">package:builder</span>
+</code><button type="button">Copy</button></pre>
+
+<h3 id="common-troubleshooting" class="tsd-anchor-link">Common troubleshooting<a href="#common-troubleshooting" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>If <code>npm install</code> fails, make sure Node.js is installed and <code>npm</code> is on your <code>PATH</code>.</li>
+<li>If the Windows build fails, verify you are running the commands on a Windows machine.</li>
+<li>If the app does not launch after packaging, open the generated app and confirm the required runtime dependencies are present.</li>
+<li>If you need signing for a production release, add code-signing configuration before publishing the installer.</li>
+</ul>
+<h3 id="notes" class="tsd-anchor-link">Notes<a href="#notes" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3>
+<ul>
+<li>The project defines <code>@electron-forge/maker-squirrel</code> in <a href="media/forge.config.ts">forge.config.ts</a>, which is the Windows installer generator.</li>
+<li>The project also includes a GitHub publisher configuration in the same Forge config for release publishing, but the installer creation itself is driven by <code>npm run make</code>.</li>
+</ul>
 </div></div>
 <div class="col-sidebar">
 <div class="page-menu">
@@ -162,7 +209,15 @@
 <li><a href="#run-playwright-ui-tests"><span>Run <wbr/>Playwright <wbr/>UI tests</span></a></li>
 <li><a href="#run-unit-tests"><span>Run unit tests</span></a></li>
 <li><a href="#build-with-electron-builder"><span>Build with <wbr/>Electron <wbr/>Builder</span></a></li></ul></li>
-<li><a href="#useful-commands-summary"><span>Useful commands summary</span></a></li></ul></div></details></div>
+<li><a href="#useful-commands-summary"><span>Useful commands summary</span></a></li>
+<li><a href="#build-and-package-for-windows"><span>Build and <wbr/>Package for <wbr/>Windows</span></a></li>
+<li>
+<ul>
+<li><a href="#prerequisites"><span>Prerequisites</span></a></li>
+<li><a href="#create-a-windows-installer"><span>Create a <wbr/>Windows installer</span></a></li>
+<li><a href="#build-a-release-artifact-from-the-command-line"><span>Build a release artifact from the command line</span></a></li>
+<li><a href="#common-troubleshooting"><span>Common troubleshooting</span></a></li>
+<li><a href="#notes"><span>Notes</span></a></li></ul></li></ul></div></details></div>
 <div class="site-menu">
 <nav class="tsd-navigation"><a href="modules.html">kube-cluster-ui</a>
 <ul class="tsd-small-nested-navigation" id="tsd-nav-container">

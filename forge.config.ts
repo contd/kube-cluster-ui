@@ -16,7 +16,7 @@ const config: ForgeConfig = {
   packagerConfig: {
     asar: true,
     icon: customIconPath,
-    executableName: 'kube-cluster-ui',
+    executableName: 'orbita',
     // osxSign: {
     //   identity: process.env.APPLE_SIGNING_IDENTITY,
     //   hardenedRuntime: true,
@@ -74,8 +74,8 @@ const config: ForgeConfig = {
       config: {
         repository: {
           owner: 'contd',
-          name: 'kube-cluster-ui',
-          appId: 'com.contd.kube-cluster-ui',
+          name: 'orbita',
+          appId: 'com.contd.orbita',
         },
         prerelease: false,
         draft: true

@@ -1,19 +1,19 @@
-# Kube Cluster UI
+# Orbita
 
-[![Build and publish desktop binaries](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml/badge.svg)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-[![Windows build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-windows&label=Windows)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-[![macOS build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-macos&label=macOS)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-[![Linux build](https://img.shields.io/github/actions/workflow/status/contd/kube-cluster-ui/release.yml?job=build-linux&label=Linux)](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
+[![Build and publish desktop binaries](https://github.com/contd/orbita/actions/workflows/release.yml/badge.svg)](https://github.com/contd/orbita/actions/workflows/release.yml)
+[![Windows build](https://img.shields.io/github/actions/workflow/status/contd/orbita/release.yml?job=build-windows&label=Windows)](https://github.com/contd/orbita/actions/workflows/release.yml)
+[![macOS build](https://img.shields.io/github/actions/workflow/status/contd/orbita/release.yml?job=build-macos&label=macOS)](https://github.com/contd/orbita/actions/workflows/release.yml)
+[![Linux build](https://img.shields.io/github/actions/workflow/status/contd/orbita/release.yml?job=build-linux&label=Linux)](https://github.com/contd/orbita/actions/workflows/release.yml)
 
 **An open-source desktop workspace for browsing Kubernetes clusters.**
 
-Kubernetes GUI tools can involve trade-offs: some are proprietary or place key workflows behind paid tiers, while others can feel heavier and slower than everyday cluster work needs. Kube Cluster UI aims to make common inspection tasks quick and approachable, with a focused desktop interface for cluster health, workloads, configuration, access control, and events.
+Kubernetes GUI tools can involve trade-offs: some are proprietary or place key workflows behind paid tiers, while others can feel heavier and slower than everyday cluster work needs. Orbita aims to make common inspection tasks quick and approachable, with a focused desktop interface for cluster health, workloads, configuration, access control, and events.
 
 Browse resources, inspect manifests, switch contexts, and run context-bound `kubectl` commands from one application. The project is built with Electron and TypeScript, and is available for Windows, macOS, and Linux.
 
 ## Project Support
 
-Kube Cluster UI is currently supported by:
+Orbita is currently supported by:
 
 <img src="https://apex-industrial.com/wp-content/uploads/2021/10/ApexSCT_Small_Reverse_Dark_Small_Reverse.svg" width="200">
 
@@ -27,16 +27,16 @@ Kube Cluster UI is currently supported by:
 
 Download the latest packaged release for your platform:
 
-- [Windows](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [macOS](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [Linux](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [Latest release](https://github.com/contd/kube-cluster-ui/releases/latest)
-- [Latest GitHub Actions build](https://github.com/contd/kube-cluster-ui/actions/workflows/release.yml)
-- [Latest build test reports](https://github.com/contd/kube-cluster-ui/wiki)
+- [Windows](https://github.com/contd/orbita/releases/latest)
+- [macOS](https://github.com/contd/orbita/releases/latest)
+- [Linux](https://github.com/contd/orbita/releases/latest)
+- [Latest release](https://github.com/contd/orbita/releases/latest)
+- [Latest GitHub Actions build](https://github.com/contd/orbita/actions/workflows/release.yml)
+- [Latest build test reports](https://github.com/contd/orbita/wiki)
 
 ## Watch the demo
 
-[![Kube Cluster UI demo video](assets/video-preview.gif)](assets/video-preview.gif)
+[![Orbita demo video](assets/video-preview.gif)](assets/video-preview.gif)
 
 ## Features
 

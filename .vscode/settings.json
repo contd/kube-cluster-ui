@@ -1,0 +1,11 @@
+{
+  "editor.wordWrap": "on",
+  "editor.wordWrapColumn": 0,
+  "editor.wrappingIndent": "same",
+  "editor.rulers": [],
+  "[markdown]": {
+    "editor.wordWrap": "on",
+    "editor.wordWrapColumn": 0,
+    "editor.wrappingIndent": "same"
+  }
+}

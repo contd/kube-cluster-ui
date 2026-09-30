@@ -1100,7 +1100,7 @@ const registerKubernetesHandlers = () => {
 
       try {
         if (selectedContext.kubeconfig) {
-          temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'kube-cluster-ui-'));
+          temporaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(), 'orbita-'));
           kubeconfigPath = path.join(temporaryDirectory, 'config');
           await fs.writeFile(kubeconfigPath, selectedContext.kubeconfig, {
             encoding: 'utf8',
@@ -1247,7 +1247,7 @@ const createWindow = () => {
     minHeight: 920,
     width: 1440,
     height: 920,
-    title: 'Kube Cluster UI',
+    title: 'Orbita',
     backgroundColor: '#f6f7f9',
     icon: icon,
     webPreferences: {

@@ -2,6 +2,17 @@
 import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
 import * as dataplane from './dataplane';
+import './components/brand-mark';
+import {
+  bindAboutPageEvents,
+  openAboutPage,
+  renderAboutPage,
+} from './components/aboutpage';
+import {
+  bindSettingsPageEvents,
+  openSettingsPage,
+  renderSettingsPage,
+} from './components/settingspage';
 import type {
   AboutInfo,
   CliToolsAvailability,
@@ -68,8 +79,8 @@ const state = {
   snapshot: createDemoSnapshot(),
   loading: true,
   error: '',
-  theme: (localStorage.getItem('kube-cluster-ui-theme') === 'dark' ? 'dark' : 'light') as Theme,
-  density: ((localStorage.getItem('kube-cluster-ui-density') as Density | null) || 'cozy') as Density,
+  theme: (localStorage.getItem('orbita-theme') === 'dark' ? 'dark' : 'light') as Theme,
+  density: ((localStorage.getItem('orbita-density') as Density | null) || 'cozy') as Density,
   kubeconfigDialog: false,
   kubeconfigError: '',
   sortColumn: 'Name',
@@ -93,7 +104,7 @@ const state = {
 function applyTheme(theme: Theme): void {
   state.theme = theme;
   document.documentElement.dataset.theme = theme;
-  localStorage.setItem('kube-cluster-ui-theme', theme);
+  localStorage.setItem('orbita-theme', theme);
 }
 
 /**
@@ -103,7 +114,7 @@ function applyTheme(theme: Theme): void {
 function applyDensity(density: Density): void {
   state.density = density;
   document.documentElement.dataset.density = density;
-  localStorage.setItem('kube-cluster-ui-density', density);
+  localStorage.setItem('orbita-density', density);
 }
 
 /**
@@ -804,16 +815,19 @@ function render() {
   }
 
   if (state.view === 'about') {
-    app.innerHTML = renderAbout();
+    app.innerHTML = renderAboutPage(state.about);
     createIcons({ icons });
-    bindAboutEvents();
+    bindAboutPageEvents(app, () => {
+      state.view = 'dashboard';
+      render();
+    });
     return;
   }
 
   if (state.view === 'settings') {
-    app.innerHTML = renderSettings();
+    app.innerHTML = renderSettingsPage(state);
     createIcons({ icons });
-    bindSettingsEvents();
+    bindSettingsPageEvents(app, state, settingsPageActions());
     return;
   }
 
@@ -879,13 +893,22 @@ function render() {
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-mark">
-            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 512 512">
-              <path d="M0 0h512v512H0z" fill="none" />
-              <path fill="#fff" fill-rule="evenodd" d="M37.1 25.2C16.6 25.2 0 41.8 0 62.3v387.3c0 20.5 16.6 37.1 37.1 37.1h437.7c20.5 0 37.1-16.6 37.1-37.1V62.3c0-20.5-16.6-37.1-37.1-37.1zm308 310.9c3.4-9.4 5.3-19.5 5.3-30.1c0-48.9-39.6-88.5-88.5-88.5c-10.2 0-19.9 1.7-29 4.9l-29.3-76.2c16-5.4 27.5-20.5 27.5-38.3c0-22.3-18.1-40.4-40.4-40.4s-40.4 18.1-40.4 40.4s18.1 40.4 40.4 40.4q2.55 0 5.1-.3l29.8 77.3c-20 9-36 25.2-44.8 45.4l-58.3-22q.9-3.9.9-8.1c0-19.1-15.5-34.6-34.6-34.6s-34.6 15.5-34.6 34.6s15.5 34.6 34.6 34.6c13.5 0 25.3-7.8 31-19.1l58.2 22c-2.9 8.8-4.5 18.1-4.5 27.9c0 14.3 3.4 27.8 9.4 39.8L139 373.2c-7.3-10.4-19.4-17.2-33.1-17.2c-22.3 0-40.4 18.1-40.4 40.4s18.1 40.4 40.4 40.4s40.4-18.1 40.4-40.4c0-5.8-1.2-11.3-3.4-16.2l43.7-27.4a88.38 88.38 0 0 0 75.2 41.7c35.5 0 66.1-20.9 80.2-51l40.1 16q-.9 3.9-.9 8.1c0 19.1 15.5 34.6 34.6 34.6s34.6-15.5 34.6-34.6s-15.5-34.6-34.6-34.6c-13.5 0-25.3 7.8-31 19.1z" />
-            </svg>
+            <brand-mark
+              blue-bg-fill="rgb(62, 123, 250)" blue-bg-opacity="0.99"
+              dark-bg-fill="rgb(6, 13, 45)" dark-bg-opacity="0.99"
+              cube-top-fill="rgb(59, 177, 251)" cube-top-opacity="0.98"
+              cube-left-fill="rgb(55, 132, 250)" cube-left-opacity="0.98"
+              cube-right-fill="rgb(75, 90, 250)" cube-right-opacity="0.99"
+              bottom-fill="rgb(52, 133, 250)" bottom-opacity="0.98"
+              bottom-left-fill="rgb(55, 139, 250)" bottom-left-opacity="0.98"
+              bottom-right-fill="rgb(55, 138, 250)" bottom-right-opacity="0.98"
+              top-right-fill="rgb(55, 143, 250)" top-right-opacity="0.98"
+              top-left-fill="rgb(55, 145, 250)" top-left-opacity="0.98"
+              top-center-fill="rgb(54, 153, 250)" top-center-opacity="0.98"
+            ></brand-mark>
           </div>
           <div>
-            <div class="brand-title">Kube Cluster UI</div>
+            <div class="brand-title">Orbita</div>
             <div class="brand-subtitle">${escapeHtml(state.snapshot.context)}</div>
           </div>
         </div>
@@ -1054,283 +1077,30 @@ function render() {
   bindEvents();
 }
 
-/**
- * Produces the About-page markup from asynchronously loaded application metadata.
- * @returns About-view HTML, or a loading placeholder while metadata is unavailable.
- */
-function renderAbout(): string {
-  const about = state.about;
-  if (!about) {
-    return '<main class="about-page"><div class="about-card">Loading application information...</div></main>';
-  }
-
-  return `
-    <main class="about-page">
-      <section class="about-card">
-        <button class="tool-button about-back" id="about-back">
-          <i data-lucide="arrow-left"></i>
-          Back to cluster
-        </button>
-        <div class="about-mark"><i data-lucide="network"></i></div>
-        <div class="eyebrow">About</div>
-        <h1>${escapeHtml(about.productName)}</h1>
-        <p class="about-version">Version ${escapeHtml(about.version)}</p>
-        <p class="about-description">${escapeHtml(about.description)}</p>
-        <dl class="about-details">
-          <div><dt>Author</dt><dd>${escapeHtml(about.author.name)}${about.author.email ? ` <span class="about-author-email">(${escapeHtml(about.author.email)})</span>` : ''}</dd></div>
-          <div><dt>Repository</dt><dd><a href="${escapeHtml(about.repository.url)}" target="_blank" rel="noreferrer">${escapeHtml(about.repository.url)}</a></dd></div>
-        </dl>
-      </section>
-    </main>
-  `;
-}
-
-/**
- * Connects the About-page navigation control back to the dashboard.
- * @returns Nothing; registers the back-button event handler.
- */
-function bindAboutEvents(): void {
-  document.querySelector<HTMLButtonElement>('#about-back')?.addEventListener('click', () => {
-    state.view = 'dashboard';
-    render();
-  });
-}
-
-/**
- * Renders the editable kubeconfig search path and read-only CLI executable paths.
- * @returns Settings-view HTML, including saved kubeconfig editors and status messages.
- */
-function renderSettings(): string {
-  const cliPaths = state.cliToolsAvailability
-    ? (['docker', 'kind', 'kubectl'] as const)
-        .map((tool) => `${tool}: ${state.cliToolsAvailability?.[tool].path || 'Not found on PATH'}`)
-        .join('\n')
-    : 'Checking CLI locations...';
-
-  return `
-    <main class="about-page settings-page">
-      <section class="about-card settings-card">
-        <button class="tool-button about-back" id="settings-back">
-          <i data-lucide="arrow-left"></i>
-          Back to cluster
-        </button>
-        <div class="about-mark"><i data-lucide="settings-2"></i></div>
-        <div class="eyebrow">Configuration</div>
-        <h1>Settings</h1>
-        <form class="settings-form" id="settings-form">
-          <label class="settings-field" for="kubeconfig-search-path">
-            <span>Kubeconfig search path</span>
-            <input id="kubeconfig-search-path" type="text" value="${escapeHtml(state.kubeconfigSearchPath)}" placeholder="Path to a kubeconfig file or directory" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''} />
-          </label>
-          <section class="saved-kubeconfigs" aria-labelledby="saved-kubeconfigs-title">
-            <div class="saved-kubeconfigs-heading">
-              <h2 id="saved-kubeconfigs-title">Pasted kubeconfigs</h2>
-              <span>${state.savedKubeconfigs.length}</span>
-            </div>
-            ${state.savedKubeconfigs.length
-              ? state.savedKubeconfigs.map((saved) => `
-                <article class="saved-kubeconfig-entry" data-saved-kubeconfig-id="${escapeHtml(saved.id)}">
-                  <label class="settings-field" for="saved-kubeconfig-${escapeHtml(saved.id)}">
-                    <span>${escapeHtml(saved.label)}</span>
-                    <textarea id="saved-kubeconfig-${escapeHtml(saved.id)}" class="saved-kubeconfig-input" rows="8" spellcheck="false" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>${escapeHtml(state.kubeconfigDrafts[saved.id] ?? saved.kubeconfig)}</textarea>
-                  </label>
-                  <div class="saved-kubeconfig-actions">
-                    <button class="primary-button saved-kubeconfig-save" type="button" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>Save kubeconfig</button>
-                  </div>
-                </article>
-              `).join('')
-              : '<p class="settings-empty">No pasted kubeconfigs saved.</p>'}
-          </section>
-          <label class="settings-field" for="cli-executable-paths">
-            <span>Detected CLI executable paths</span>
-            <textarea id="cli-executable-paths" rows="3" readonly>${escapeHtml(cliPaths)}</textarea>
-          </label>
-          ${state.settingsError ? `<p class="settings-feedback error" role="alert">${escapeHtml(state.settingsError)}</p>` : ''}
-          ${state.settingsSaved ? '<p class="settings-feedback" role="status">Settings saved.</p>' : ''}
-          <div class="settings-actions">
-            <button class="tool-button" id="cancel-settings" type="button">Cancel</button>
-            <button class="primary-button" id="save-settings" type="submit" ${state.settingsLoading || state.settingsSaving ? 'disabled' : ''}>
-              ${state.settingsSaving ? 'Saving...' : 'Save settings'}
-            </button>
-          </div>
-        </form>
-      </section>
-    </main>
-  `;
-}
-
-/**
- * Loads persisted settings and opens the custom Settings view.
- * @returns A promise that resolves after settings data has loaded and the view rerenders.
- */
-async function openSettings(): Promise<void> {
-  state.view = 'settings';
-  state.settingsLoading = true;
-  state.settingsSaved = false;
-  state.settingsError = '';
-  render();
-
-  try {
-    if (!window.kubeApi?.getSettings) {
-      throw new Error('Settings are unavailable.');
-    }
-
-    const settings = await window.kubeApi.getSettings();
-    state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
-    state.savedKubeconfigs = settings.savedKubeconfigs;
-    state.kubeconfigDrafts = {};
-    state.cliToolsAvailability = settings.cliToolsAvailability;
-  } catch (error) {
-    state.settingsError = error instanceof Error
-      ? error.message
-      : 'Unable to load settings.';
-  } finally {
-    state.settingsLoading = false;
-    if (state.view === 'settings') {
-      render();
-    }
-  }
-}
-
-/**
- * Connects Settings navigation and persists changed kubeconfig discovery paths.
- * @returns Nothing; registers editor, save, and close event handlers.
- */
-function bindSettingsEvents(): void {
-  const closeSettings = () => {
-    state.view = 'dashboard';
-    render();
+function settingsPageActions() {
+  return {
+    api: window.kubeApi,
+    render,
+    loadContexts,
+    loadSnapshot,
   };
-
-  document.querySelector<HTMLButtonElement>('#settings-back')?.addEventListener('click', closeSettings);
-  document.querySelector<HTMLButtonElement>('#cancel-settings')?.addEventListener('click', closeSettings);
-  document.querySelector<HTMLInputElement>('#kubeconfig-search-path')?.addEventListener('input', (event) => {
-    state.kubeconfigSearchPath = (event.target as HTMLInputElement).value;
-    state.settingsSaved = false;
-  });
-  document.querySelectorAll<HTMLTextAreaElement>('.saved-kubeconfig-input').forEach((input) => {
-    input.addEventListener('input', () => {
-      const entry = input.closest<HTMLElement>('.saved-kubeconfig-entry');
-      const id = entry?.dataset.savedKubeconfigId;
-      if (id) {
-        state.kubeconfigDrafts[id] = input.value;
-      }
-    });
-  });
-  document.querySelectorAll<HTMLButtonElement>('.saved-kubeconfig-save').forEach((button) => {
-    button.addEventListener('click', () => {
-      const entry = button.closest<HTMLElement>('.saved-kubeconfig-entry');
-      const id = entry?.dataset.savedKubeconfigId;
-      const input = entry?.querySelector<HTMLTextAreaElement>('.saved-kubeconfig-input');
-      if (!id || !input) {
-        return;
-      }
-
-      const kubeconfig = input.value;
-      state.kubeconfigDrafts[id] = kubeconfig;
-      state.settingsSaving = true;
-      state.settingsError = '';
-      render();
-
-      void (async () => {
-        try {
-          if (!window.kubeApi?.updateSavedKubeconfig) {
-            throw new Error('Saved kubeconfigs cannot be updated.');
-          }
-
-          const settings = await window.kubeApi.updateSavedKubeconfig(id, kubeconfig);
-          state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
-          state.savedKubeconfigs = settings.savedKubeconfigs;
-          const remainingDrafts = { ...state.kubeconfigDrafts };
-          delete remainingDrafts[id];
-          state.kubeconfigDrafts = remainingDrafts;
-          state.cliToolsAvailability = settings.cliToolsAvailability;
-          state.settingsSaved = true;
-          await loadContexts();
-          await loadSnapshot();
-        } catch (error) {
-          state.settingsError = error instanceof Error
-            ? error.message
-            : 'Unable to update the saved kubeconfig.';
-        } finally {
-          state.settingsSaving = false;
-          if (state.view === 'settings') {
-            render();
-          }
-        }
-      })();
-    });
-  });
-  document.querySelector<HTMLFormElement>('#settings-form')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const input = document.querySelector<HTMLInputElement>('#kubeconfig-search-path');
-    const searchPath = input?.value.trim() || '';
-    if (!searchPath) {
-      state.settingsError = 'Enter a kubeconfig search path.';
-      render();
-      return;
-    }
-
-    state.kubeconfigSearchPath = searchPath;
-    state.settingsSaving = true;
-    state.settingsSaved = false;
-    state.settingsError = '';
-    render();
-
-    void (async () => {
-      try {
-        if (!window.kubeApi?.setKubeconfigSearchPath) {
-          throw new Error('Settings are unavailable.');
-        }
-
-        const settings = await window.kubeApi.setKubeconfigSearchPath(searchPath);
-        state.kubeconfigSearchPath = settings.kubeconfigSearchPath;
-        state.cliToolsAvailability = settings.cliToolsAvailability;
-        state.settingsSaved = true;
-        await loadContexts();
-        await loadSnapshot();
-      } catch (error) {
-        state.settingsError = error instanceof Error
-          ? error.message
-          : 'Unable to save settings.';
-      } finally {
-        state.settingsSaving = false;
-        if (state.view === 'settings') {
-          render();
-        }
-      }
-    })();
-  });
 }
 
-/**
- * Switches to the About view, loads metadata through preload, and falls back gracefully.
- * @returns A promise that resolves after metadata loading and the view rerender.
- */
+async function openSettings(): Promise<void> {
+  await openSettingsPage(state, settingsPageActions());
+}
+
 async function openAbout(): Promise<void> {
-  state.view = 'about';
-  state.about = null;
-  render();
-
-  try {
-    if (!window.appInfo) {
-      throw new Error('Application information is unavailable.');
-    }
-
-    state.about = await window.appInfo.getAbout();
-  } catch {
-    state.about = {
-      productName: 'Kube Cluster UI',
-      version: 'Unknown',
-      repository: { type: 'git', url: '' },
-      description: 'A Kubernetes cluster browser.',
-      author: { name: 'Unknown', email: '' },
-    };
-  }
-
-  if (state.view === 'about') {
-    render();
-  }
+  await openAboutPage(state, {
+    getAbout: () => {
+      const appInfo = window.appInfo;
+      if (!appInfo) {
+        throw new Error('Application information is unavailable.');
+      }
+      return appInfo.getAbout();
+    },
+    render,
+  });
 }
 
 /**
@@ -2304,7 +2074,7 @@ export function pod(
       creationTimestamp: timestamp(hoursOffset),
       labels: {
         app: name.split('-')[0],
-        'app.kubernetes.io/managed-by': 'kube-cluster-ui',
+        'app.kubernetes.io/managed-by': 'orbita',
       },
     },
     spec: { nodeName, restartPolicy: 'Always' },

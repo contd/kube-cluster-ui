@@ -2,14 +2,14 @@
   "config": {
     "argv": [
       "/usr/local/bin/node",
-      "/Users/jason/apex/develop/kube-cluster-ui/node_modules/.bin/playwright",
+      "/Users/jason/apex/develop/orbita/node_modules/.bin/playwright",
       "test",
       "tests/renderer.spec.ts",
       "-g",
       "Settings view renders configuration and CLI paths"
     ],
-    "configFile": "/Users/jason/apex/develop/kube-cluster-ui/playwright.config.ts",
-    "rootDir": "/Users/jason/apex/develop/kube-cluster-ui/tests",
+    "configFile": "/Users/jason/apex/develop/orbita/playwright.config.ts",
+    "rootDir": "/Users/jason/apex/develop/orbita/tests",
     "failOnFlakyTests": false,
     "forbidOnly": true,
     "fullyParallel": true,
@@ -25,7 +25,7 @@
     "preserveOutput": "always",
     "projects": [
       {
-        "outputDir": "/Users/jason/apex/develop/kube-cluster-ui/test-results",
+        "outputDir": "/Users/jason/apex/develop/orbita/test-results",
         "repeatEach": 1,
         "retries": 2,
         "metadata": {
@@ -33,7 +33,7 @@
         },
         "id": "",
         "name": "",
-        "testDir": "/Users/jason/apex/develop/kube-cluster-ui/tests",
+        "testDir": "/Users/jason/apex/develop/orbita/tests",
         "testIgnore": [
           "**/*.unit.test.ts"
         ],
@@ -88,7 +88,7 @@
       "specs": [],
       "suites": [
         {
-          "title": "Kube Cluster UI views",
+          "title": "Orbita views",
           "file": "renderer.spec.ts",
           "line": 74,
           "column": 6,

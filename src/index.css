@@ -135,9 +135,9 @@ button {
   color: #65d0b5;`z1
 }
 
-.brand-mark svg {
-  width: 22px;
-  height: 22px;
+.brand-mark brand-mark {
+  width: 42px;
+  height: 42px;
 }
 
 .brand-title {
@@ -664,16 +664,19 @@ button {
   display: grid;
   width: 64px;
   height: 64px;
-  margin-bottom: 24px;
+  margin: 0;
+  padding: 0;
   place-items: center;
   border-radius: 14px;
   background: #1c6470;
   color: #d8f5ee;
 }
 
-.about-mark svg {
-  width: 32px;
-  height: 32px;
+.about-mark brand-mark {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  padding: 0;
 }
 
 .about-card h1 {
@@ -1104,9 +1107,9 @@ h1 {
   border-radius: 5px;
 }
 
-[data-density="compact"] .brand-mark svg {
-  width: 13px;
-  height: 13px;
+[data-density="compact"] .brand-mark brand-mark {
+  width: 25px;
+  height: 25px;
 }
 
 [data-density="compact"] .brand-subtitle,

@@ -238,7 +238,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kube-cluster-ui-windows
+          name: orbita-windows
           path: |
             dist/*
             !**/*.blockmap
@@ -279,7 +279,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kube-cluster-ui-macos
+          name: orbita-macos
           path: |
             dist/*
             !**/*.blockmap
@@ -320,7 +320,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: kube-cluster-ui-linux
+          name: orbita-linux
           path: |
             dist/*
             !**/*.blockmap

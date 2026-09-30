@@ -298,12 +298,12 @@
   window.appInfo = {
     getAbout: async () => ({
   /** Application metadata fixture returned by the mocked About API. */
-      productName: 'Kube Cluster UI',
+      productName: 'Orbita',
     /** @returns {Promise<object>} Static product details used by the About view. */
       version: '2.5.0',
-      repository: { type: 'git', url: 'https://github.com/contd/kube-cluster-ui.git' },
+      repository: { type: 'git', url: 'https://github.com/contd/orbita.git' },
       description: 'A Kubernetes cluster browser inspired by LENS.',
-      author: { name: 'Kube Cluster UI', email: '' },
+      author: { name: 'Orbita', email: '' },
     }),
     /** @param {Function} listener - Callback to invoke for About menu requests. */
     onShowAbout: (listener) => window.addEventListener('app:show-about', listener),

@@ -1,6 +1,6 @@
-appId: com.contd.kube-cluster-ui
-productName: Kube Cluster UI
-executableName: kube-cluster-ui
+appId: com.contd.orbita
+productName: Orbita
+executableName: orbita
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 
 asar: true

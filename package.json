@@ -1,10 +1,10 @@
 {
-  "name": "kube-cluster-ui",
-  "productName": "Kube Cluster UI",
+  "name": "orbita",
+  "productName": "Orbita",
   "version": "2.7.3",
   "repository": {
     "type": "git",
-    "url": "https://github.com/contd/kube-cluster-ui.git"
+    "url": "https://github.com/contd/orbita.git"
   },
   "description": "A Kubernetes cluster browser inspired by LENS.",
   "main": ".vite/build/main.js",
@@ -30,6 +30,7 @@
     "test:e2e": "playwright test && npm run generate:video-preview",
     "test:unit": "vitest run",
     "test": "vitest run && npm run test:e2e",
+    "generate:brand-icons": "node scripts/generate-brand-icons.mjs",
     "docs": "node scripts/generate-typedoc-docs.js",
     "generate:video-preview": "node scripts/generate-video-preview.js"
   },
@@ -46,6 +47,7 @@
     "@electron-forge/plugin-vite": "^7.11.2",
     "@electron-forge/publisher-github": "^7.11.2",
     "@electron/fuses": "^1.8.0",
+    "@fiahfy/icns": "^0.0.7",
     "@playwright/test": "^1.63.0",
     "@types/electron-squirrel-startup": "^1.0.2",
     "@typescript-eslint/eslint-plugin": "^5.62.0",
@@ -57,6 +59,8 @@
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "jsdom": "^25.0.1",
+    "png-to-ico": "^3.0.2",
+    "sharp": "^0.35.5",
     "typedoc": "^0.28.20",
     "typescript": "^5.9.3",
     "vite": "^5.4.21",

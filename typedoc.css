@@ -5,7 +5,7 @@
   overflow: hidden;
   color: transparent;
   font-size: 0;
-  background: url("favicon.svg") center / contain no-repeat;
+  background: url("favicon.png") center / contain no-repeat;
 }
 
 :root[data-theme="dark"] .tsd-toolbar-contents a.title {

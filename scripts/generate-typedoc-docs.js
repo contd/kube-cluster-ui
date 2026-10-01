@@ -26,7 +26,7 @@ const typedocArgs = [
   'typedoc',
   '--entryPointStrategy', 'expand',
   '--skipErrorChecking',
-  '--favicon', 'src/favicon.svg',
+  '--favicon', 'src/favicon.png',
   '--customCss', 'typedoc.css',
   '--out', 'docs',
   'src',

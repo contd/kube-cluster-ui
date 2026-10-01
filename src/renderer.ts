@@ -3,6 +3,7 @@ import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
 import * as dataplane from './dataplane';
 import './components/brand-mark';
+import './components/terminal-panel';
 import {
   bindAboutPageEvents,
   openAboutPage,
@@ -93,6 +94,7 @@ const state = {
   settingsSaving: false,
   settingsSaved: false,
   settingsError: '',
+  terminalPanelOpen: false,
   savedKubeconfigs: [] as SavedKubeconfig[],
   kubeconfigDrafts: {} as Record<string, string>,
 };
@@ -991,6 +993,12 @@ function render() {
           </div>
 
           <div class="top-actions">
+            <button class="icon-button terminal-launcher" id="open-terminal-panel" title="Kubectl terminal" aria-label="Open kubectl terminal">
+              <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16" aria-hidden="true">
+                <path d="M0 0h16v16H0z" fill="none" />
+                <path fill="currentColor" d="M1 1h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H1a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1m6.5 11a.5.5 0 1 1 0-1h5a.5.5 0 1 1 0 1zM3.146 5.354a.5.5 0 1 1 .708-.708L6.457 7.25a1 1 0 0 1 .003 1.397l-2.6 2.7a.5.5 0 1 1-.72-.694L5.743 7.95zM1 2v12h14V2z" />
+              </svg>
+            </button>
             <button class="icon-button" id="open-settings" title="Settings" aria-label="Settings">
               <i data-lucide="settings-2"></i>
             </button>
@@ -1035,8 +1043,6 @@ function render() {
         ${state.error ? `<div class="banner"><i data-lucide="info"></i>${escapeHtml(state.error)}</div>` : ''}
 
         ${state.section === 'dashboard' ? renderSummary() : ''}
-        ${state.section === 'dashboard' ? renderKubectlTerminal() : ''}
-
         ${state.section === 'dashboard' ? '' : `<section class="content">
           <section class="resource-panel">
             <div class="panel-header">
@@ -1064,6 +1070,9 @@ function render() {
       </main>
 
       <footer class="status-bar connection ${state.loading ? 'loading' : state.snapshot.mode}" aria-live="polite">
+        <terminal-panel theme="${state.theme}" ${state.terminalPanelOpen ? 'open' : ''}>
+          ${renderKubectlTerminal()}
+        </terminal-panel>
         <div class="cluster-status">
           <span class="connection-indicator"></span>
           <span>${escapeHtml(clusterStatus)}</span>
@@ -1457,8 +1466,18 @@ export const contextLabel = dataplane.contextLabel;
  * @returns Nothing; attaches event handlers to the currently rendered dashboard.
  */
 function bindEvents() {
+  document.querySelector('terminal-panel')?.addEventListener('panel-state-change', (event) => {
+    state.terminalPanelOpen = (event as CustomEvent<boolean>).detail;
+  });
+
   document.querySelector<HTMLButtonElement>('#open-settings')?.addEventListener('click', () => {
     void openSettings();
+  });
+
+  document.querySelector<HTMLButtonElement>('#open-terminal-panel')?.addEventListener('click', () => {
+    document.querySelector('terminal-panel')?.dispatchEvent(
+      new Event('terminal-panel-request-open'),
+    );
   });
 
   document.querySelector<HTMLButtonElement>('#kubectl-clear-history')?.addEventListener('click', () => {

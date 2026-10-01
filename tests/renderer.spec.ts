@@ -147,6 +147,49 @@ test.describe('Orbita views', () => {
     await page.screenshot({ path: 'assets/snapshots/01-dashboard.png', fullPage: true });
   });
 
+  test('opens the terminal panel from the status bar', async ({ page }) => {
+    const statusbarButton = page.getByRole('button', { name: 'Kubectl terminal', exact: true });
+    const topbarButton = page.getByRole('button', { name: 'Open kubectl terminal' });
+    await expect(statusbarButton).toBeVisible();
+    await expect(topbarButton).toBeVisible();
+    await expect(topbarButton).toHaveCSS('width', '42px');
+    await expect(topbarButton.locator('svg')).toHaveCSS('width', '21px');
+    const statusbarOrder = await page.locator('.status-bar').evaluate((statusbar) => {
+      const terminalPanel = statusbar.querySelector('terminal-panel');
+      const clusterStatus = statusbar.querySelector('.cluster-status');
+      return Boolean(terminalPanel && clusterStatus && (
+        terminalPanel.compareDocumentPosition(clusterStatus) & Node.DOCUMENT_POSITION_FOLLOWING
+      ));
+    });
+    expect(statusbarOrder).toBe(true);
+    const toolbarOrder = await page.locator('.top-actions').evaluate((actions) => {
+      const terminalButton = actions.querySelector('#open-terminal-panel');
+      const settingsButton = actions.querySelector('#open-settings');
+      return Boolean(terminalButton && settingsButton && (
+        terminalButton.compareDocumentPosition(settingsButton) & Node.DOCUMENT_POSITION_FOLLOWING
+      ));
+    });
+    expect(toolbarOrder).toBe(true);
+
+    await topbarButton.click();
+
+    const panel = page.getByRole('dialog', { name: 'Kubectl terminal' });
+    await expect(panel).toBeVisible();
+    await expect(page.locator('.dashboard-terminal-grid')).toBeVisible();
+    const panelHeight = await panel.evaluate((element) => element.getBoundingClientRect().height);
+    const viewportHeight = await page.evaluate(() => window.innerHeight);
+    expect(panelHeight).toBeCloseTo(viewportHeight * 0.8, 0);
+
+    await page.keyboard.press('Escape');
+    await expect(panel).toBeVisible();
+    await page.locator('terminal-panel').locator('.backdrop').click({ position: { x: 10, y: 10 } });
+    await expect(panel).toBeVisible();
+
+    await page.getByRole('button', { name: 'Close' }).click();
+    await expect(panel).toBeHidden();
+    await expect(page.locator('.status-bar')).toBeVisible();
+  });
+
   test('hides zero nav counts until a resource collection loads', async ({ page }) => {
     const clusterRoles = page.locator('.nav-item[data-kind="clusterroles"]');
     await expect(clusterRoles.locator('.nav-count')).toHaveCount(0);
@@ -176,6 +219,7 @@ test.describe('Orbita views', () => {
       }
     });
     await page.reload();
+    await page.getByRole('button', { name: 'Open kubectl terminal' }).click();
 
     await expect(page.locator('.dashboard-terminal-grid')).toHaveClass(/kubectl-disabled/);
     await expect(page.locator('.kubectl-disabled-overlay')).toBeVisible();
@@ -209,6 +253,7 @@ test.describe('Orbita views', () => {
       }
     });
     await page.reload();
+    await page.getByRole('button', { name: 'Open kubectl terminal' }).click();
 
     await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
     await expect(page.locator('.docker-detection')).toHaveText('docker');
@@ -315,6 +360,7 @@ test.describe('Orbita views', () => {
       window.kubeApi = mockKubeApi as NonNullable<Window['kubeApi']>;
     });
     await page.reload();
+    await page.getByRole('button', { name: 'Open kubectl terminal' }).click();
     await expect(page.locator('.cluster-status')).toHaveText('Connected to dev');
     await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
     await expect(page.locator('.docker-detection')).toHaveText('docker');

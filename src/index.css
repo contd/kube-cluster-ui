@@ -936,6 +936,11 @@ h1 {
   height: 16px;
 }
 
+.icon-button.terminal-launcher svg {
+  width: 21px;
+  height: 21px;
+}
+
 .icon-button.spinning svg {
   animation: spin 1s linear infinite;
 }

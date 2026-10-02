@@ -1,3 +1,4 @@
+/** Converts unit and Playwright JSON reports into a Markdown summary. */
 const fs = require('node:fs');
 const path = require('node:path');
 

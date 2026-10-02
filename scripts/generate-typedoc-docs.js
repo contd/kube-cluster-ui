@@ -1,3 +1,4 @@
+/** Builds TypeDoc output and incorporates available unit and end-to-end reports. */
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');

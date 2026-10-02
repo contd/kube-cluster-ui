@@ -1405,12 +1405,28 @@ h1 {
 }
 
 .summary-card {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  appearance: none;
   min-height: 114px;
   padding: 15px;
   border: 1px solid #d7dde2;
   border-radius: 8px;
   background: #ffffff;
+  color: inherit;
   box-shadow: 0 1px 2px rgba(18, 28, 36, 0.05);
+  text-align: left;
+}
+
+.summary-card:hover {
+  border-color: #aebbc4;
+  box-shadow: 0 2px 5px rgba(18, 28, 36, 0.1);
+}
+
+.summary-card:focus-visible {
+  outline: 2px solid #4b9fca;
+  outline-offset: 2px;
 }
 
 .summary-top {
@@ -1453,22 +1469,28 @@ h1 {
   background: #6f95d8;
 }
 
-.summary-card.healthy .meter span,
-.summary-card.healthy .summary-top svg {
-  color: #2f9a72;
+.summary-card.healthy .meter span {
   background: #48b88b;
 }
 
-.summary-card.warning .meter span,
-.summary-card.warning .summary-top svg {
-  color: #ba7b17;
+.summary-card.healthy .summary-top svg {
+  color: #2f9a72;
+}
+
+.summary-card.warning .meter span {
   background: #efb448;
 }
 
-.summary-card.danger .meter span,
+.summary-card.warning .summary-top svg {
+  color: #ba7b17;
+}
+
+.summary-card.danger .meter span {
+  background: #df6d61;
+}
+
 .summary-card.danger .summary-top svg {
   color: #c25548;
-  background: #df6d61;
 }
 
 .dashboard-terminal-grid {
@@ -1723,40 +1745,6 @@ h1 {
   color: #edf5f6;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.8125rem;
-}
-
-.kubectl-shortcut-hint {
-  flex: 0 0 108px;
-  width: 108px;
-  height: 28px;
-  overflow: visible;
-}
-
-.kubectl-shortcut-hint rect {
-  fill: #18262c;
-  stroke: #60747d;
-  stroke-width: 1;
-}
-
-.kubectl-shortcut-hint text {
-  fill: #d5e1e4;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.kubectl-shortcut-hint .kubectl-shortcut-plus {
-  fill: #93a7af;
-  font-size: 12px;
-}
-
-.kubectl-shortcut-hint .kubectl-spacebar {
-  fill: #111a1e;
-}
-
-.kubectl-shortcut-hint .kubectl-spacebar-label {
-  font-size: 8px;
-  font-weight: 500;
 }
 
 .kubectl-command-field input::placeholder {

@@ -1,3 +1,4 @@
+/** End-to-end coverage for About page metadata and navigation behavior. */
 import { expect, test } from '@playwright/test';
 
 test.describe('About page', () => {

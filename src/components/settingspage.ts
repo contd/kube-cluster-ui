@@ -1,3 +1,4 @@
+/** Settings page rendering, kubeconfig editing, and persistence event handling. */
 import type {
   CliToolsAvailability,
   KubeApi,

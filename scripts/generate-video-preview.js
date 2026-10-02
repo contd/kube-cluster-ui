@@ -1,3 +1,4 @@
+/** Generates the animated README preview from the recorded Playwright video. */
 const { spawnSync } = require('node:child_process');
 
 /** Skips optional media generation in automated CI environments. */

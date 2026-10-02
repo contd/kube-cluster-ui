@@ -3,7 +3,14 @@ import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
 import * as dataplane from './dataplane';
 import './components/brand-mark';
-import './components/terminal-panel';
+import { bindInspectorEvents, renderInspector } from './components/inspector';
+import {
+  bindTerminalEvents,
+  clearTerminalOutput,
+  highlightKubectlOutput,
+  renderKubectlTerminal,
+} from './components/terminal-panel';
+export { highlightKubectlOutput };
 import {
   bindAboutPageEvents,
   openAboutPage,
@@ -20,7 +27,6 @@ import type {
   ClusterContext,
   Column,
   Density,
-  KubectlResult,
   KubeResource,
   Metadata,
   NavItem,
@@ -61,18 +67,8 @@ const state = {
   selectedKind: 'pods' as ResourceKind,
   selectedResourceId: '',
   collapsedNavGroups: { Configuration: true, Storage: true, Observability: true, 'Access Control': true } as Record<string, boolean>,
-  kubectlInput: '',
-  kubectlHistory: [] as string[],
-  kubectlResult: null as (KubectlResult & {
-    /** Command text associated with the displayed result. */
-    command: string;
-  }) | null,
-  kubectlError: '',
-  kubectlRunning: false,
-  kubectlRequestId: 0,
   cliToolsAvailability: null as CliToolsAvailability | null,
   kubectlAvailabilityMessage: 'Checking whether kubectl is available...',
-  outputExpanded: false,
   namespace: 'all',
   query: '',
   selectedContextId: '',
@@ -117,28 +113,6 @@ function applyDensity(density: Density): void {
   state.density = density;
   document.documentElement.dataset.density = density;
   localStorage.setItem('orbita-density', density);
-}
-
-/**
- * Clears terminal output and prevents any in-flight command from restoring stale results.
- * @returns Nothing; invalidates pending command responses and clears result state.
- */
-function clearKubectlOutput(): void {
-  state.kubectlRequestId += 1;
-  state.kubectlResult = null;
-  state.kubectlError = '';
-  state.kubectlRunning = false;
-}
-
-/**
- * Scrolls the command log to the newest entry after a submitted command renders.
- * @returns Nothing; updates the terminal history scroll position when present.
- */
-function scrollKubectlHistoryToBottom(): void {
-  const history = document.querySelector<HTMLElement>('.kubectl-terminal-screen');
-  if (history) {
-    history.scrollTop = history.scrollHeight;
-  }
 }
 
 /**
@@ -752,62 +726,6 @@ export function highlightYaml(yaml: string): string {
 }
 
 /**
- * Highlights JSON, Kubernetes YAML, table headers, and common status values.
- * @param output - Raw stdout/stderr text from a kubectl invocation.
- * @returns Escaped and syntax-highlighted HTML for the output pane.
- */
-export function highlightKubectlOutput(output: string): string {
-  const trimmed = output.trim();
-  if (!trimmed) {
-    return '<span class="kubectl-output-muted">Command completed with no output.</span>';
-  }
-
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-    try {
-      const formatted = JSON.stringify(JSON.parse(trimmed), null, 2);
-      return escapeHtml(formatted).replace(
-        /("(?:\\.|[^"\\])*")(\s*:)?|(-?\d+(?:\.\d+)?|\b(?:true|false|null)\b)/g,
-        (match, stringToken: string | undefined, colon: string | undefined) => {
-          if (!stringToken) {
-            return `<span class="json-literal">${match}</span>`;
-          }
-
-          return colon
-            ? `<span class="json-key">${stringToken}</span>${colon}`
-            : `<span class="json-string">${stringToken}</span>`;
-        },
-      );
-    } catch {
-      return escapeHtml(output);
-    }
-  }
-
-  if (/^(?:apiVersion|kind|metadata|items|spec|status|data|secrets):/m.test(trimmed)) {
-    return highlightYaml(output);
-  }
-
-  const lines = output.split('\n');
-  if (/^[A-Z][A-Z0-9 _-]*(?:\s{2,}[A-Z][A-Z0-9_-]*)+$/.test(lines[0]?.trim() || '')) {
-    return lines
-      .map((line, index) => {
-        const escapedLine = escapeHtml(line).replace(
-          /\b(Running|Ready|Active|Bound|Succeeded|Complete|Completed|Pending|Warning|Failed|Error)\b/gi,
-          (status) => `<span class="kubectl-status-${status.toLowerCase()}">${status}</span>`,
-        );
-        return index === 0
-          ? `<span class="kubectl-table-header">${escapedLine}</span>`
-          : escapedLine;
-      })
-      .join('\n');
-  }
-
-  return escapeHtml(output).replace(
-    /\b(Running|Ready|Active|Bound|Succeeded|Complete|Completed|Pending|Warning|Failed|Error)\b/gi,
-    (status) => `<span class="kubectl-status-${status.toLowerCase()}">${status}</span>`,
-  );
-}
-
-/**
  * Rebuilds the active dashboard or custom view and reconnects its DOM event handlers.
  * @returns Nothing; replaces the application root with the active view markup.
  */
@@ -836,6 +754,10 @@ function render() {
   const currentNav = navItems.find((item) => item.kind === (state.section === 'dashboard' ? 'dashboard' : state.selectedKind));
   const resources = dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query);
   const selected = dataplane.selectedResource(resources, state.selectedResourceId);
+  const selectedContext = state.contexts.find((context) => context.id === state.selectedContextId);
+  const terminalContextName = selectedContext
+    ? contextLabel(selectedContext)
+    : state.snapshot.context;
   const clusterStatus = state.loading
     ? `Connecting to ${state.snapshot.context}`
     : state.snapshot.mode === 'live'
@@ -1063,15 +985,17 @@ function render() {
             </div>
           </section>
 
-          <aside class="inspector ${selected ? 'open' : ''}">
-            ${renderInspector(selected)}
-          </aside>
+          ${renderInspector(selected, state.selectedKind)}
         </section>`}
       </main>
 
       <footer class="status-bar connection ${state.loading ? 'loading' : state.snapshot.mode}" aria-live="polite">
         <terminal-panel theme="${state.theme}" ${state.terminalPanelOpen ? 'open' : ''}>
-          ${renderKubectlTerminal()}
+          ${renderKubectlTerminal({
+            contextName: terminalContextName,
+            cliToolsAvailability: state.cliToolsAvailability,
+            kubectlAvailabilityMessage: state.kubectlAvailabilityMessage,
+          })}
         </terminal-panel>
         <div class="cluster-status">
           <span class="connection-indicator"></span>
@@ -1083,7 +1007,7 @@ function render() {
   `;
 
   createIcons({ icons });
-  bindEvents();
+  bindEvents(selected, terminalContextName);
 }
 
 function settingsPageActions() {
@@ -1130,104 +1054,10 @@ function renderSummary(): string {
 
   return `
     <section class="summary-grid">
-      ${summaryCard('Pods Running', `${summary.runningPods}/${summary.pods.length}`, podPercent, 'activity', 'healthy')}
-      ${summaryCard('Nodes Ready', `${summary.readyNodes}/${summary.nodes.length}`, nodePercent, 'server', 'neutral')}
-      ${summaryCard('Workloads Ready', `${summary.readyWorkloads}/${summary.workloads.length}`, workloadPercent, 'boxes', 'healthy')}
-      ${summaryCard('Warnings', String(summary.warnings), summary.warnings ? 34 : 100, 'triangle-alert', summary.warnings ? 'warning' : 'healthy')}
-    </section>
-  `;
-}
-
-/**
- * Renders the context-bound command prompt and its syntax-highlighted output.
- * @returns Terminal and output-pane HTML for the dashboard.
- */
-function renderKubectlTerminal(): string {
-  const kubectlDisabled = state.cliToolsAvailability?.kubectl.available !== true;
-  const selectedContext = state.contexts.find(
-    (context) => context.id === state.selectedContextId,
-  );
-  const contextName = selectedContext
-    ? contextLabel(selectedContext)
-    : state.snapshot.context;
-  const output = state.kubectlResult
-    ? [state.kubectlResult.stdout, state.kubectlResult.stderr]
-        .filter(Boolean)
-        .join('\n')
-    : '';
-
-  return `
-    <section class="dashboard-terminal-grid ${state.outputExpanded ? 'expanded-output' : ''} ${kubectlDisabled ? 'kubectl-disabled' : ''}" aria-label="Kubectl terminal">
-      <section class="dashboard-terminal-pane kubectl-command-pane">
-        <header class="terminal-pane-heading">
-          <h2><i data-lucide="terminal"></i> Terminal</h2>
-          <div class="kubectl-terminal-header-actions">
-            <button class="kubectl-clear-history" id="kubectl-clear-history" title="Clear history" aria-label="Clear history" ${kubectlDisabled || !state.kubectlHistory.length ? 'disabled' : ''}>
-              <i data-lucide="trash-2"></i><span>Clear history</span>
-            </button>
-            <span class="kubectl-context" title="${escapeHtml(contextName)}">
-              <i data-lucide="network"></i>${escapeHtml(contextName)}
-            </span>
-          </div>
-        </header>
-        <div class="kubectl-terminal-screen" aria-live="polite">
-          ${state.kubectlHistory.length
-            ? `<ol class="kubectl-history-list" aria-label="Command history">${state.kubectlHistory
-                .map((command) => `<li class="kubectl-history-entry"><span>$</span><code>${escapeHtml(command)}</code></li>`)
-                .join('')}</ol>`
-            : '<div class="kubectl-terminal-idle"><i data-lucide="chevron-right"></i><span>kubectl</span></div>'}
-          ${state.kubectlError ? `<p class="kubectl-terminal-error">${escapeHtml(state.kubectlError)}</p>` : ''}
-        </div>
-        <form class="kubectl-command-form" id="kubectl-form">
-          <label class="kubectl-command-field">
-            <svg class="kubectl-shortcut-hint" viewBox="0 0 108 28" aria-hidden="true" focusable="false">
-              <rect x="1" y="2" width="20" height="24" rx="4"></rect>
-              <text x="11" y="19" text-anchor="middle">k</text>
-              <text class="kubectl-shortcut-plus" x="30" y="18" text-anchor="middle">+</text>
-              <rect class="kubectl-spacebar" x="40" y="6" width="66" height="20" rx="4"></rect>
-              <text class="kubectl-spacebar-label" x="73" y="19" text-anchor="middle">spacebar</text>
-            </svg>
-            <input id="kubectl-command" type="text" aria-label="Kubectl command" value="${escapeHtml(state.kubectlInput)}" placeholder="kubectl get pods -A" autocomplete="off" spellcheck="false" ${kubectlDisabled || state.kubectlRunning ? 'disabled' : ''} />
-          </label>
-          <button class="primary-button kubectl-run-button" id="kubectl-run" type="submit" ${kubectlDisabled || state.kubectlRunning ? 'disabled' : ''}>
-            <i data-lucide="${state.kubectlRunning ? 'loader-circle' : 'play'}"></i>
-            ${state.kubectlRunning ? 'Running' : 'Run'}
-          </button>
-        </form>
-      </section>
-      <section class="dashboard-terminal-pane kubectl-output-pane">
-        <header class="terminal-pane-heading">
-          <h2>
-            <button class="kubectl-output-toggle" id="kubectl-output-toggle" aria-expanded="${state.outputExpanded}" aria-label="${state.outputExpanded ? 'Collapse output panel' : 'Expand output panel'}" ${kubectlDisabled ? 'disabled' : ''}>
-              <i data-lucide="code-xml"></i><span>Output</span>
-            </button>
-          </h2>
-          <div class="kubectl-output-actions">
-            ${state.kubectlResult || state.kubectlError
-              ? `<button class="kubectl-clear-output" id="kubectl-clear-output" title="Clear terminal output" aria-label="Clear terminal output" ${kubectlDisabled ? 'disabled' : ''}><i data-lucide="trash-2"></i><span>Clear</span></button>`
-              : ''}
-            ${state.kubectlResult
-              ? `<span class="kubectl-exit-status ${state.kubectlResult.exitCode === 0 ? 'success' : 'failure'}">Exit ${state.kubectlResult.exitCode}</span>`
-              : ''}
-          </div>
-        </header>
-        <pre class="kubectl-output" id="kubectl-output" aria-live="polite">${state.kubectlRunning
-          ? '<span class="kubectl-output-muted">Running kubectl...</span>'
-          : state.kubectlError
-            ? `<span class="kubectl-status-error">${escapeHtml(state.kubectlError)}</span>`
-            : state.kubectlResult
-              ? highlightKubectlOutput(output)
-              : '<span class="kubectl-output-muted">Awaiting output</span>'}</pre>
-      </section>
-      ${kubectlDisabled
-        ? `<div class="kubectl-disabled-overlay" role="status" aria-live="polite">
-            <div class="kubectl-disabled-message">
-              <i data-lucide="terminal" aria-hidden="true"></i>
-              <h2>${state.cliToolsAvailability ? 'Terminal unavailable' : 'Checking kubectl'}</h2>
-              <p>${escapeHtml(state.kubectlAvailabilityMessage)}</p>
-            </div>
-          </div>`
-        : ''}
+      ${summaryCard('Pods Running', `${summary.runningPods}/${summary.pods.length}`, podPercent, 'activity', 'healthy', 'pods')}
+      ${summaryCard('Nodes Ready', `${summary.readyNodes}/${summary.nodes.length}`, nodePercent, 'server', 'neutral', 'nodes')}
+      ${summaryCard('Workloads Ready', `${summary.readyWorkloads}/${summary.workloads.length}`, workloadPercent, 'boxes', 'healthy', 'daemonsets')}
+      ${summaryCard('Warnings', String(summary.warnings), summary.warnings ? 34 : 100, 'triangle-alert', summary.warnings ? 'warning' : 'healthy', 'events')}
     </section>
   `;
 }
@@ -1247,18 +1077,19 @@ function summaryCard(
   percent: number,
   icon: string,
   tone: StatusTone,
+  targetKind: ResourceKind,
 ): string {
   return `
-    <article class="summary-card ${tone}">
+    <button class="summary-card ${tone}" type="button" data-summary-kind="${targetKind}">
       <div class="summary-top">
         <span>${escapeHtml(title)}</span>
-        <i data-lucide="${icon}"></i>
+        <i data-lucide="${icon}" aria-hidden="true"></i>
       </div>
       <strong>${escapeHtml(value)}</strong>
       <div class="meter" aria-hidden="true">
         <span style="width: ${Math.min(100, Math.max(0, percent))}%"></span>
       </div>
-    </article>
+    </button>
   `;
 }
 
@@ -1363,99 +1194,6 @@ function renderTable(resources: KubeResource[]): string {
   `;
 }
 
-/**
- * Renders the selected resource's facts, labels, event message, and YAML manifest.
- * @param resource - Selected resource, when one is present.
- * @returns Inspector HTML, or an empty string when no resource is selected.
- */
-function renderInspector(resource: KubeResource | undefined): string {
-  if (!resource) {
-    return '';
-  }
-
-  const kind = state.selectedKind;
-  const labels = metadata(resource).labels || {};
-  const manifest = formatManifest(resource);
-
-  return `
-    <div class="inspector-header">
-      <div>
-        <span>${escapeHtml(kindLabel(kind))}</span>
-        <h2>${escapeHtml(resourceName(resource))}</h2>
-      </div>
-      <div class="inspector-actions">
-        <button class="icon-button small" id="copy-name" title="Copy resource name" aria-label="Copy resource name">
-          <i data-lucide="copy"></i>
-        </button>
-        <button class="icon-button small" id="close-inspector" title="Close inspector" aria-label="Close inspector">
-          <i data-lucide="x"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="facts">
-      ${fact('Namespace', resourceNamespace(resource))}
-      ${fact('Status', statusFor(resource, kind))}
-      ${fact('Age', age(metadata(resource).creationTimestamp))}
-      ${fact('Labels', String(Object.keys(labels).length))}
-    </div>
-
-    <section class="detail-section">
-      <h3>Labels</h3>
-      <div class="labels">
-        ${Object.entries(labels).length
-          ? Object.entries(labels)
-              .slice(0, 8)
-              .map(([key, value]) => `<span>${escapeHtml(key)}=${escapeHtml(value)}</span>`)
-              .join('')
-          : '<span>none</span>'}
-      </div>
-    </section>
-
-    ${kind === 'events' ? renderEventMessage(resource) : ''}
-
-    <section class="detail-section manifest-section">
-      <div class="section-heading">
-        <h3>Manifest</h3>
-        <button class="tool-button compact" id="copy-manifest">
-          <i data-lucide="copy"></i>
-          Copy
-        </button>
-      </div>
-      <pre id="manifest">${highlightYaml(manifest)}</pre>
-    </section>
-  `;
-}
-
-/**
- * Produces the optional Event message section for the inspector.
- * @param resource - Event resource whose message is displayed.
- * @returns Escaped Event message section HTML.
- */
-function renderEventMessage(resource: KubeResource): string {
-  return `
-    <section class="detail-section">
-      <h3>Message</h3>
-      <p class="event-message">${escapeHtml(resource.message || 'No event message available.')}</p>
-    </section>
-  `;
-}
-
-/**
- * Renders one label/value pair in the inspector facts grid.
- * @param label - Fact name displayed to the user.
- * @param value - Fact value displayed beside its name.
- * @returns Fact-row HTML.
- */
-function fact(label: string, value: string): string {
-  return `
-    <div class="fact">
-      <span>${escapeHtml(label)}</span>
-      <strong>${escapeHtml(value)}</strong>
-    </div>
-  `;
-}
-
 /** Re-exports the data-plane label resolver for existing renderer consumers. */
 export const kindLabel = dataplane.kindLabel;
 /** Re-exports the data-plane context label resolver for existing renderer consumers. */
@@ -1465,9 +1203,61 @@ export const contextLabel = dataplane.contextLabel;
  * Wires dashboard controls to state updates, data loading, selection, and clipboard actions.
  * @returns Nothing; attaches event handlers to the currently rendered dashboard.
  */
-function bindEvents() {
+function bindEvents(
+  selectedResource: KubeResource | undefined,
+  terminalContextName: string,
+) {
   document.querySelector('terminal-panel')?.addEventListener('panel-state-change', (event) => {
     state.terminalPanelOpen = (event as CustomEvent<boolean>).detail;
+  });
+
+  const terminalPanel = document.querySelector<HTMLElement>('terminal-panel');
+  if (terminalPanel) {
+    const terminalOptions = {
+      contextName: terminalContextName,
+      cliToolsAvailability: state.cliToolsAvailability,
+      kubectlAvailabilityMessage: state.kubectlAvailabilityMessage,
+    };
+    const terminalActions = {
+      api: window.kubeApi,
+      selectedContextId: state.selectedContextId,
+    };
+    const refreshTerminal = () => {
+      terminalPanel.innerHTML = renderKubectlTerminal(terminalOptions);
+      createIcons({ icons, root: terminalPanel });
+      bindTerminalEvents(terminalPanel, {
+        ...terminalActions,
+        render: refreshTerminal,
+      });
+    };
+
+    bindTerminalEvents(terminalPanel, {
+      ...terminalActions,
+      render: refreshTerminal,
+    });
+  }
+  bindInspectorEvents(document, selectedResource, {
+    onClose: () => {
+      state.selectedResourceId = '';
+      render();
+    },
+    onCopy: (text) => {
+      void navigator.clipboard.writeText(text);
+    },
+  });
+
+  document.querySelectorAll<HTMLButtonElement>('[data-summary-kind]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const kind = button.dataset.summaryKind as ResourceKind | undefined;
+      if (!kind) {
+        return;
+      }
+
+      state.section = kind;
+      state.selectedKind = kind;
+      state.selectedResourceId = '';
+      render();
+    });
   });
 
   document.querySelector<HTMLButtonElement>('#open-settings')?.addEventListener('click', () => {
@@ -1478,94 +1268,6 @@ function bindEvents() {
     document.querySelector('terminal-panel')?.dispatchEvent(
       new Event('terminal-panel-request-open'),
     );
-  });
-
-  document.querySelector<HTMLButtonElement>('#kubectl-clear-history')?.addEventListener('click', () => {
-    state.kubectlHistory = [];
-    render();
-  });
-
-  document.querySelector<HTMLButtonElement>('#kubectl-clear-output')?.addEventListener('click', () => {
-    clearKubectlOutput();
-    render();
-  });
-
-  document.querySelector<HTMLButtonElement>('#kubectl-output-toggle')?.addEventListener('click', () => {
-    state.outputExpanded = !state.outputExpanded;
-    render();
-  });
-
-  document.querySelector<HTMLInputElement>('#kubectl-command')?.addEventListener('input', (event) => {
-    const target = event.target as HTMLInputElement;
-    if (target.value.startsWith('k ')) {
-      const selectionStart = target.selectionStart ?? target.value.length;
-      const selectionEnd = target.selectionEnd ?? target.value.length;
-      target.value = `kubectl ${target.value.slice(2)}`;
-      target.setSelectionRange(selectionStart + 6, selectionEnd + 6);
-    }
-    state.kubectlInput = target.value;
-  });
-
-  document.querySelector<HTMLInputElement>('#kubectl-command')?.addEventListener('keydown', (event) => {
-    const target = event.currentTarget as HTMLInputElement;
-    if (
-      event.key !== 'Tab' ||
-      target.value !== 'k' ||
-      target.selectionStart !== target.value.length ||
-      target.selectionEnd !== target.value.length
-    ) {
-      return;
-    }
-
-    event.preventDefault();
-    target.value = 'kubectl ';
-    state.kubectlInput = target.value;
-    target.setSelectionRange(target.value.length, target.value.length);
-  });
-
-  document.querySelector<HTMLFormElement>('#kubectl-form')?.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const command = state.kubectlInput.trim();
-    if (!command || state.kubectlRunning) {
-      return;
-    }
-
-    state.kubectlInput = '';
-    state.kubectlHistory.push(command);
-    if (state.kubectlHistory.length > 1000) {
-      state.kubectlHistory.splice(0, state.kubectlHistory.length - 1000);
-    }
-    state.kubectlResult = null;
-    state.kubectlError = '';
-    state.kubectlRunning = true;
-    const requestId = ++state.kubectlRequestId;
-    render();
-    scrollKubectlHistoryToBottom();
-
-    void (async () => {
-      try {
-        if (!window.kubeApi?.runKubectl) {
-          throw new Error('Kubectl command execution is unavailable.');
-        }
-
-        const result = await window.kubeApi.runKubectl(command, state.selectedContextId);
-        if (requestId === state.kubectlRequestId) {
-          state.kubectlResult = { ...result, command };
-        }
-      } catch (error) {
-        if (requestId === state.kubectlRequestId) {
-          state.kubectlError = error instanceof Error
-            ? error.message
-            : 'Unable to run kubectl command.';
-        }
-      } finally {
-        if (requestId === state.kubectlRequestId) {
-          state.kubectlRunning = false;
-          render();
-          scrollKubectlHistoryToBottom();
-        }
-      }
-    })();
   });
 
   document.querySelectorAll<HTMLButtonElement>('.nav-group-toggle').forEach((button) => {
@@ -1606,7 +1308,7 @@ function bindEvents() {
 
     try {
       const result = await window.kubeApi.addKubeconfig(kubeconfig);
-      clearKubectlOutput();
+      clearTerminalOutput();
       state.contexts = result.contexts;
       state.selectedContextId = result.selectedContextId;
       state.kubeconfigDialog = false;
@@ -1664,7 +1366,7 @@ function bindEvents() {
       }
 
       const result = await window.kubeApi.setContext(nextContextId);
-      clearKubectlOutput();
+      clearTerminalOutput();
       state.contexts = result.contexts;
       state.selectedContextId = result.selectedContextId;
       await loadSnapshot();

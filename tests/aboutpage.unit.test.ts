@@ -1,3 +1,4 @@
+/** Unit coverage for About page rendering, loading, fallback, and navigation behavior. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   bindAboutPageEvents,

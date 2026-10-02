@@ -1,3 +1,4 @@
+/** Generates the app and favicon icon formats from the canonical brand-mark SVG. */
 import {
   mkdtempSync,
   readFileSync,

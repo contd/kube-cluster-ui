@@ -1,3 +1,4 @@
+/** Unit coverage for Settings page rendering, validation, and persistence events. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   bindSettingsPageEvents,

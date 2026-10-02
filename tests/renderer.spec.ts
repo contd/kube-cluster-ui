@@ -147,6 +147,29 @@ test.describe('Orbita views', () => {
     await page.screenshot({ path: 'assets/snapshots/01-dashboard.png', fullPage: true });
   });
 
+  test('summary cards open their matching resource views', async ({ page }) => {
+    const iconBackgrounds = await page.locator('.summary-card svg').evaluateAll((icons) => {
+      return icons.map((icon) => getComputedStyle(icon).backgroundColor);
+    });
+    expect(iconBackgrounds.every((color) => color === 'rgba(0, 0, 0, 0)')).toBe(true);
+
+    const destinations = [
+      ['pods', 'Pods Running', 'Pods'],
+      ['nodes', 'Nodes Ready', 'Nodes'],
+      ['daemonsets', 'Workloads Ready', 'DaemonSets'],
+      ['events', 'Warnings', 'Events'],
+    ] as const;
+
+    for (const [kind, title, heading] of destinations) {
+      const card = page.locator(`.summary-card[data-summary-kind="${kind}"]`);
+      await expect(card).toContainText(title);
+      await card.click();
+      await expect(page.locator('h1')).toHaveText(heading);
+      await expect(page.locator('table')).toBeVisible();
+      await page.locator('.nav-item[data-kind="dashboard"]').click();
+    }
+  });
+
   test('opens the terminal panel from the status bar', async ({ page }) => {
     const statusbarButton = page.getByRole('button', { name: 'Kubectl terminal', exact: true });
     const topbarButton = page.getByRole('button', { name: 'Open kubectl terminal' });
@@ -175,6 +198,7 @@ test.describe('Orbita views', () => {
 
     const panel = page.getByRole('dialog', { name: 'Kubectl terminal' });
     await expect(panel).toBeVisible();
+    await expect(panel).toHaveCSS('outline-style', 'none');
     await expect(page.locator('.dashboard-terminal-grid')).toBeVisible();
     const panelHeight = await panel.evaluate((element) => element.getBoundingClientRect().height);
     const viewportHeight = await page.evaluate(() => window.innerHeight);
@@ -361,6 +385,9 @@ test.describe('Orbita views', () => {
     });
     await page.reload();
     await page.getByRole('button', { name: 'Open kubectl terminal' }).click();
+    await page.locator('terminal-panel').locator('.panel').evaluate((panel) => {
+      panel.setAttribute('data-render-token', 'stable');
+    });
     await expect(page.locator('.cluster-status')).toHaveText('Connected to dev');
     await expect(page.locator('.kubectl-detection')).toHaveText('kubectl');
     await expect(page.locator('.docker-detection')).toHaveText('docker');
@@ -375,6 +402,10 @@ test.describe('Orbita views', () => {
     await page.locator('#kubectl-run').click();
 
     await expect(page.locator('#kubectl-output .yaml-key').first()).toContainText('apiVersion');
+    await expect(page.locator('terminal-panel').locator('.panel')).toHaveAttribute(
+      'data-render-token',
+      'stable',
+    );
     await expect(page.locator('.kubectl-exit-status')).toHaveText('Exit 0');
     await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-command', 'kubectl get pod demo -o yaml');
     await expect(page.locator('html')).toHaveAttribute('data-last-kubectl-context', 'test-config::dev');
@@ -387,8 +418,6 @@ test.describe('Orbita views', () => {
       return outputColumn / commandColumn;
     });
 
-    await expect(outputToggle).toHaveAttribute('aria-expanded', 'false');
-    await outputToggle.click();
     await expect(outputToggle).toHaveAttribute('aria-expanded', 'true');
     await expect.poll(columnRatio).toBeGreaterThan(3.9);
     await outputToggle.click();

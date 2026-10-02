@@ -1,4 +1,14 @@
+/** Statusbar terminal launcher and overlay hosting the slotted terminal interface. */
 import { createIcons, icons } from 'lucide';
+import {
+  escapeHtml,
+  highlightYaml,
+} from '../dataplane';
+import type {
+  CliToolsAvailability,
+  KubeApi,
+  KubectlResult,
+} from '../app.types';
 
 const panelStyles = `
   :host { display: inline-flex; align-items: center; }
@@ -15,6 +25,7 @@ const panelStyles = `
   }
   button:hover, button:focus-visible { background: rgba(255, 255, 255, 0.14); }
   button:focus-visible { outline: 2px solid #65d0b5; outline-offset: 1px; }
+  button:focus:not(:focus-visible), .panel:focus { outline: none; }
   svg { display: block; width: 16px; height: 16px; }
   .backdrop[hidden] { display: none; }
   .backdrop {
@@ -140,6 +151,274 @@ export class TerminalPanel extends HTMLElement {
     } else if (button && this.isConnected) {
       button.focus();
     }
+  }
+}
+
+type TerminalState = {
+  input: string;
+  history: string[];
+  result: (KubectlResult & { command: string }) | null;
+  error: string;
+  running: boolean;
+  requestId: number;
+  outputExpanded: boolean;
+};
+
+export type TerminalViewOptions = {
+  contextName: string;
+  cliToolsAvailability: CliToolsAvailability | null;
+  kubectlAvailabilityMessage: string;
+};
+
+export type TerminalActions = {
+  api?: Pick<KubeApi, 'runKubectl'>;
+  selectedContextId: string;
+  render: () => void;
+};
+
+const terminalState: TerminalState = {
+  input: '',
+  history: [],
+  result: null,
+  error: '',
+  running: false,
+  requestId: 0,
+  outputExpanded: true,
+};
+
+/** Renders the context-bound command prompt and syntax-highlighted output panes. */
+export function renderKubectlTerminal(options: TerminalViewOptions): string {
+  const kubectlDisabled = options.cliToolsAvailability?.kubectl.available !== true;
+  const output = terminalState.result
+    ? [terminalState.result.stdout, terminalState.result.stderr]
+        .filter(Boolean)
+        .join('\n')
+    : '';
+
+  return `
+    <section class="dashboard-terminal-grid ${terminalState.outputExpanded ? 'expanded-output' : ''} ${kubectlDisabled ? 'kubectl-disabled' : ''}" aria-label="Kubectl terminal">
+      <section class="dashboard-terminal-pane kubectl-command-pane">
+        <header class="terminal-pane-heading">
+          <h2><i data-lucide="terminal"></i> Terminal</h2>
+          <div class="kubectl-terminal-header-actions">
+            <button class="kubectl-clear-history" id="kubectl-clear-history" title="Clear history" aria-label="Clear history" ${kubectlDisabled || !terminalState.history.length ? 'disabled' : ''}>
+              <i data-lucide="trash-2"></i><span>Clear history</span>
+            </button>
+            <span class="kubectl-context" title="${escapeHtml(options.contextName)}">
+              <i data-lucide="network"></i>${escapeHtml(options.contextName)}
+            </span>
+          </div>
+        </header>
+        <div class="kubectl-terminal-screen" aria-live="polite">
+          ${terminalState.history.length
+            ? `<ol class="kubectl-history-list" aria-label="Command history">${terminalState.history
+                .map((command) => `<li class="kubectl-history-entry"><span>$</span><code>${escapeHtml(command)}</code></li>`)
+                .join('')}</ol>`
+            : '<div class="kubectl-terminal-idle"><i data-lucide="chevron-right"></i><span>kubectl</span></div>'}
+          ${terminalState.error ? `<p class="kubectl-terminal-error">${escapeHtml(terminalState.error)}</p>` : ''}
+        </div>
+        <form class="kubectl-command-form" id="kubectl-form">
+          <label class="kubectl-command-field">
+            <input id="kubectl-command" type="text" aria-label="Kubectl command" value="${escapeHtml(terminalState.input)}" placeholder="kubectl get pods -A" autocomplete="off" spellcheck="false" ${kubectlDisabled || terminalState.running ? 'disabled' : ''} />
+          </label>
+          <button class="primary-button kubectl-run-button" id="kubectl-run" type="submit" ${kubectlDisabled || terminalState.running ? 'disabled' : ''}>
+            <i data-lucide="${terminalState.running ? 'loader-circle' : 'play'}"></i>
+            ${terminalState.running ? 'Running' : 'Run'}
+          </button>
+        </form>
+      </section>
+      <section class="dashboard-terminal-pane kubectl-output-pane">
+        <header class="terminal-pane-heading">
+          <h2>
+            <button class="kubectl-output-toggle" id="kubectl-output-toggle" aria-expanded="${terminalState.outputExpanded}" aria-label="${terminalState.outputExpanded ? 'Collapse output panel' : 'Expand output panel'}" ${kubectlDisabled ? 'disabled' : ''}>
+              <i data-lucide="code-xml"></i><span>Output</span>
+            </button>
+          </h2>
+          <div class="kubectl-output-actions">
+            ${terminalState.result || terminalState.error
+              ? `<button class="kubectl-clear-output" id="kubectl-clear-output" title="Clear terminal output" aria-label="Clear terminal output" ${kubectlDisabled ? 'disabled' : ''}><i data-lucide="trash-2"></i><span>Clear</span></button>`
+              : ''}
+            ${terminalState.result
+              ? `<span class="kubectl-exit-status ${terminalState.result.exitCode === 0 ? 'success' : 'failure'}">Exit ${terminalState.result.exitCode}</span>`
+              : ''}
+          </div>
+        </header>
+        <pre class="kubectl-output" id="kubectl-output" aria-live="polite">${terminalState.running
+          ? '<span class="kubectl-output-muted">Running kubectl...</span>'
+          : terminalState.error
+            ? `<span class="kubectl-status-error">${escapeHtml(terminalState.error)}</span>`
+            : terminalState.result
+              ? highlightKubectlOutput(output)
+              : '<span class="kubectl-output-muted">Awaiting output</span>'}</pre>
+      </section>
+      ${kubectlDisabled
+        ? `<div class="kubectl-disabled-overlay" role="status" aria-live="polite">
+            <div class="kubectl-disabled-message">
+              <i data-lucide="terminal" aria-hidden="true"></i>
+              <h2>${options.cliToolsAvailability ? 'Terminal unavailable' : 'Checking kubectl'}</h2>
+              <p>${escapeHtml(options.kubectlAvailabilityMessage)}</p>
+            </div>
+          </div>`
+        : ''}
+    </section>
+  `;
+}
+
+/** Invalidates any active command and clears the displayed terminal result. */
+export function clearTerminalOutput(): void {
+  terminalState.requestId += 1;
+  terminalState.result = null;
+  terminalState.error = '';
+  terminalState.running = false;
+}
+
+/** Wires the command prompt and output controls to local state and the preload API. */
+export function bindTerminalEvents(root: ParentNode, actions: TerminalActions): void {
+  root.querySelector<HTMLButtonElement>('#kubectl-clear-history')?.addEventListener('click', () => {
+    terminalState.history = [];
+    actions.render();
+  });
+
+  root.querySelector<HTMLButtonElement>('#kubectl-clear-output')?.addEventListener('click', () => {
+    clearTerminalOutput();
+    actions.render();
+  });
+
+  root.querySelector<HTMLButtonElement>('#kubectl-output-toggle')?.addEventListener('click', () => {
+    terminalState.outputExpanded = !terminalState.outputExpanded;
+    actions.render();
+  });
+
+  root.querySelector<HTMLInputElement>('#kubectl-command')?.addEventListener('input', (event) => {
+    const target = event.target as HTMLInputElement;
+    if (target.value.startsWith('k ')) {
+      const selectionStart = target.selectionStart ?? target.value.length;
+      const selectionEnd = target.selectionEnd ?? target.value.length;
+      target.value = `kubectl ${target.value.slice(2)}`;
+      target.setSelectionRange(selectionStart + 6, selectionEnd + 6);
+    }
+    terminalState.input = target.value;
+  });
+
+  root.querySelector<HTMLInputElement>('#kubectl-command')?.addEventListener('keydown', (event) => {
+    const target = event.currentTarget as HTMLInputElement;
+    if (
+      event.key !== 'Tab' ||
+      target.value !== 'k' ||
+      target.selectionStart !== target.value.length ||
+      target.selectionEnd !== target.value.length
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    target.value = 'kubectl ';
+    terminalState.input = target.value;
+    target.setSelectionRange(target.value.length, target.value.length);
+  });
+
+  root.querySelector<HTMLFormElement>('#kubectl-form')?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const command = terminalState.input.trim();
+    if (!command || terminalState.running) {
+      return;
+    }
+
+    terminalState.input = '';
+    terminalState.history.push(command);
+    if (terminalState.history.length > 1000) {
+      terminalState.history.splice(0, terminalState.history.length - 1000);
+    }
+    terminalState.result = null;
+    terminalState.error = '';
+    terminalState.running = true;
+    const requestId = ++terminalState.requestId;
+    actions.render();
+    scrollTerminalHistoryToBottom(root);
+
+    void (async () => {
+      try {
+        if (!actions.api?.runKubectl) {
+          throw new Error('Kubectl command execution is unavailable.');
+        }
+
+        const result = await actions.api.runKubectl(command, actions.selectedContextId);
+        if (requestId === terminalState.requestId) {
+          terminalState.result = { ...result, command };
+        }
+      } catch (error) {
+        if (requestId === terminalState.requestId) {
+          terminalState.error = error instanceof Error
+            ? error.message
+            : 'Unable to run kubectl command.';
+        }
+      } finally {
+        if (requestId === terminalState.requestId) {
+          terminalState.running = false;
+          actions.render();
+          scrollTerminalHistoryToBottom(root);
+        }
+      }
+    })();
+  });
+}
+
+/** Highlights JSON, Kubernetes YAML, table headers, and common status values. */
+export function highlightKubectlOutput(output: string): string {
+  const trimmed = output.trim();
+  if (!trimmed) {
+    return '<span class="kubectl-output-muted">Command completed with no output.</span>';
+  }
+
+  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+    try {
+      const formatted = JSON.stringify(JSON.parse(trimmed), null, 2);
+      return escapeHtml(formatted).replace(
+        /("(?:\\.|[^"\\])*")(\s*:)?|(-?\d+(?:\.\d+)?|\b(?:true|false|null)\b)/g,
+        (match, stringToken: string | undefined, colon: string | undefined) => {
+          if (!stringToken) {
+            return `<span class="json-literal">${match}</span>`;
+          }
+
+          return colon
+            ? `<span class="json-key">${stringToken}</span>${colon}`
+            : `<span class="json-string">${stringToken}</span>`;
+        },
+      );
+    } catch {
+      return escapeHtml(output);
+    }
+  }
+
+  if (/^(?:apiVersion|kind|metadata|items|spec|status|data|secrets):/m.test(trimmed)) {
+    return highlightYaml(output);
+  }
+
+  const lines = output.split('\n');
+  if (/^[A-Z][A-Z0-9 _-]*(?:\s{2,}[A-Z][A-Z0-9_-]*)+$/.test(lines[0]?.trim() || '')) {
+    return lines
+      .map((line, index) => {
+        const escapedLine = escapeHtml(line).replace(
+          /\b(Running|Ready|Active|Bound|Succeeded|Complete|Completed|Pending|Warning|Failed|Error)\b/gi,
+          (status) => `<span class="kubectl-status-${status.toLowerCase()}">${status}</span>`,
+        );
+        return index === 0
+          ? `<span class="kubectl-table-header">${escapedLine}</span>`
+          : escapedLine;
+      })
+      .join('\n');
+  }
+
+  return escapeHtml(output).replace(
+    /\b(Running|Ready|Active|Bound|Succeeded|Complete|Completed|Pending|Warning|Failed|Error)\b/gi,
+    (status) => `<span class="kubectl-status-${status.toLowerCase()}">${status}</span>`,
+  );
+}
+
+function scrollTerminalHistoryToBottom(root: ParentNode): void {
+  const history = root.querySelector<HTMLElement>('.kubectl-terminal-screen');
+  if (history) {
+    history.scrollTop = history.scrollHeight;
   }
 }
 

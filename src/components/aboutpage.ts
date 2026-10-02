@@ -1,3 +1,4 @@
+/** About page rendering, metadata loading, and back-navigation event handling. */
 import type { AboutInfo } from '../app.types';
 import { escapeHtml } from '../dataplane';
 

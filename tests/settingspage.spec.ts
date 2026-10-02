@@ -1,3 +1,4 @@
+/** End-to-end coverage for the settings page and persisted kubeconfig workflows. */
 import { expect, test } from '@playwright/test';
 
 test.describe('Settings page', () => {

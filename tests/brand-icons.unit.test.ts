@@ -1,3 +1,4 @@
+/** Unit coverage for generating the app's favicon and platform icon assets. */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';

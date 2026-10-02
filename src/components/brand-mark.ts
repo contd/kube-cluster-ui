@@ -1,3 +1,4 @@
+/** Reusable Orbita brand-mark web component with customizable SVG path colors. */
 export const brandMarkSvg = `
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 784 901" role="img" aria-label="Orbita">
     <g transform="matrix(1,0,0,1,-235.325169,-159.81383)">

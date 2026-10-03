@@ -1,4 +1,4 @@
-<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>highlightKubectlOutput | orbita</title><link rel="icon" href="../assets/favicon.png" type="image/png"/><meta name="description" content="Documentation for orbita"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
+<!DOCTYPE html><html class="default" lang="en" data-base="../"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>renderInspector | orbita</title><link rel="icon" href="../assets/favicon.png" type="image/png"/><meta name="description" content="Documentation for orbita"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="../assets/style.css"/><link rel="stylesheet" href="../assets/highlight.css"/><link rel="stylesheet" href="../assets/custom.css"/><script defer src="../assets/main.js"></script><script async src="../assets/icons.js" id="tsd-icons-script"></script><script async src="../assets/search.js" id="tsd-search-script"></script><script async src="../assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar">
 <div class="tsd-toolbar-contents container"><a href="../index.html" class="title">orbita</a>
 <div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="../assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/>
 <ul role="listbox" id="tsd-search-results"></ul>
@@ -8,26 +8,24 @@
 <div class="col-content">
 <div class="tsd-page-title">
 <ul class="tsd-breadcrumb" aria-label="Breadcrumb">
-<li><a href="../modules/renderer.html">renderer</a></li>
-<li><a href="" aria-current="page">highlightKubectlOutput</a></li></ul>
-<h1>Function highlightKubectlOutput</h1></div>
+<li><a href="../modules/components_inspector.html">components/inspector</a></li>
+<li><a href="" aria-current="page">renderInspector</a></li></ul>
+<h1>Function renderInspector</h1></div>
 <section class="tsd-panel">
 <ul class="tsd-signatures">
 <li class="">
-<div class="tsd-signature tsd-anchor-link" id="highlightkubectloutput"><span class="tsd-kind-call-signature">highlightKubectlOutput</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">output</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#highlightkubectloutput" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
+<div class="tsd-signature tsd-anchor-link" id="renderinspector"><span class="tsd-kind-call-signature">renderInspector</span><span class="tsd-signature-symbol">(</span><span class="tsd-kind-parameter">resource</span><span class="tsd-signature-symbol">:</span> <a href="../types/app.types.KubeResource.html" class="tsd-signature-type tsd-kind-type-alias">KubeResource</a><span class="tsd-signature-symbol">,</span> <span class="tsd-kind-parameter">kind</span><span class="tsd-signature-symbol">:</span> <a href="../types/app.types.ResourceKind.html" class="tsd-signature-type tsd-kind-type-alias">ResourceKind</a><span class="tsd-signature-symbol">)</span><span class="tsd-signature-symbol">:</span> <span class="tsd-signature-type">string</span><a href="#renderinspector" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="../assets/icons.svg#icon-anchor"></use></svg></a></div>
 <div class="tsd-description">
-<div class="tsd-comment tsd-typography"><p>Highlights JSON, Kubernetes YAML, table headers, and common status values.</p>
+<div class="tsd-comment tsd-typography"><p>Renders the selected resource details, or an empty inspector when none is selected.</p>
 </div>
 <div class="tsd-parameters">
 <h4 class="tsd-parameters-title">Parameters</h4>
 <ul class="tsd-parameter-list">
-<li><span><span class="tsd-kind-parameter">output</span>: <span class="tsd-signature-type">string</span></span>
-<div class="tsd-comment tsd-typography"><p>Raw stdout/stderr text from a kubectl invocation.</p>
-</div></li></ul></div>
-<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4><p>Escaped and syntax-highlighted HTML for the output pane.</p>
-<aside class="tsd-sources">
+<li><span><span class="tsd-kind-parameter">resource</span>: <a href="../types/app.types.KubeResource.html" class="tsd-signature-type tsd-kind-type-alias">KubeResource</a></span></li>
+<li><span><span class="tsd-kind-parameter">kind</span>: <a href="../types/app.types.ResourceKind.html" class="tsd-signature-type tsd-kind-type-alias">ResourceKind</a></span></li></ul></div>
+<h4 class="tsd-returns-title">Returns <span class="tsd-signature-type">string</span></h4><aside class="tsd-sources">
 <ul>
-<li>Defined in <a href="https://github.com/contd/orbita/blob/27753e7f2cf76e2589f0b21d243f9b6a65220bde/src/renderer.ts#L759">src/renderer.ts:759</a></li></ul></aside></div></li></ul></section></div>
+<li>Defined in <a href="https://github.com/contd/orbita/blob/43c781cb4c44486b7ab98c754eceb71da981f0ae/src/components/inspector.ts#L22">src/components/inspector.ts:22</a></li></ul></aside></div></li></ul></section></div>
 <div class="col-sidebar">
 <div class="page-menu">
 <div class="tsd-navigation settings">

@@ -1053,6 +1053,16 @@ h1 {
   color: #8fa1aa;
 }
 
+[data-theme="dark"] .name-cell-action {
+  color: #c0cdd3;
+}
+
+[data-theme="dark"] .name-cell-action:hover {
+  border-color: #445861;
+  background: #26363f;
+  color: #f1f6f8;
+}
+
 [data-theme="dark"] .panel-header,
 [data-theme="dark"] .inspector-header,
 [data-theme="dark"] .detail-section,
@@ -2099,10 +2109,57 @@ tbody tr.active {
 
 .name-cell {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
   align-items: center;
   min-width: 280px;
+}
+
+.name-cell-main {
+  min-width: 0;
+}
+
+.name-cell-actions {
+  display: flex;
+  gap: 3px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease;
+}
+
+tbody tr:hover .name-cell-actions,
+.name-cell-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.name-cell-action {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: #596a73;
+}
+
+.name-cell-action:hover {
+  border-color: #cbd6dc;
+  background: #ffffff;
+  color: #263038;
+}
+
+.name-cell-action:focus-visible {
+  border-color: #4b9fca;
+  outline: 2px solid #4b9fca;
+  outline-offset: 1px;
+}
+
+.name-cell-action svg {
+  width: 15px;
+  height: 15px;
 }
 
 .name-cell strong,
@@ -2263,6 +2320,18 @@ tbody tr.active {
   gap: 6px;
 }
 
+.inspector-heading {
+  flex: 1;
+  min-width: 0;
+}
+
+.inspector-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
 .inspector-header span {
   color: #70808a;
   font-size: 0.75rem;
@@ -2273,6 +2342,8 @@ tbody tr.active {
 
 .inspector-header h2 {
   display: -webkit-box;
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   margin-top: 4px;
   color: #151a1f;

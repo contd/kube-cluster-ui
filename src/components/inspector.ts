@@ -15,6 +15,7 @@ import type { KubeResource, ResourceKind } from '../app.types';
 export type InspectorActions = {
   onClose: () => void;
   onCopy: (text: string) => void;
+  onLogs: (opener: HTMLElement) => void;
 };
 
 /** Renders the selected resource details, or an empty inspector when none is selected. */
@@ -32,13 +33,18 @@ export function renderInspector(
   return `
     <aside class="inspector open">
       <div class="inspector-header">
-        <div>
+        <div class="inspector-heading">
           <span>${escapeHtml(kindLabel(kind))}</span>
-          <h2>${escapeHtml(resourceName(resource))}</h2>
+          <div class="inspector-title-row">
+            <h2>${escapeHtml(resourceName(resource))}</h2>
+            <button class="icon-button small" id="copy-name" title="Copy resource name" aria-label="Copy resource name">
+              <i data-lucide="copy"></i>
+            </button>
+          </div>
         </div>
         <div class="inspector-actions">
-          <button class="icon-button small" id="copy-name" title="Copy resource name" aria-label="Copy resource name">
-            <i data-lucide="copy"></i>
+          <button class="icon-button small" id="inspector-open-logs" title="Open logs" aria-label="Open logs">
+            <i data-lucide="logs"></i>
           </button>
           <button class="icon-button small" id="close-inspector" title="Close inspector" aria-label="Close inspector">
             <i data-lucide="x"></i>
@@ -92,6 +98,9 @@ export function bindInspectorEvents(
   }
 
   root.querySelector<HTMLButtonElement>('#close-inspector')?.addEventListener('click', actions.onClose);
+  root.querySelector<HTMLButtonElement>('#inspector-open-logs')?.addEventListener('click', (event) => {
+    actions.onLogs(event.currentTarget as HTMLElement);
+  });
   root.querySelector<HTMLButtonElement>('#copy-name')?.addEventListener('click', () => {
     actions.onCopy(resourceName(resource));
   });

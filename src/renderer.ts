@@ -3,6 +3,8 @@ import { createIcons, icons } from 'lucide';
 import YAML from 'yaml';
 import * as dataplane from './dataplane';
 import './components/brand-mark';
+import './components/logs-panel';
+import type { LogsPanel } from './components/logs-panel';
 import { bindInspectorEvents, renderInspector } from './components/inspector';
 import {
   bindTerminalEvents,
@@ -997,6 +999,7 @@ function render() {
             kubectlAvailabilityMessage: state.kubectlAvailabilityMessage,
           })}
         </terminal-panel>
+        <logs-panel theme="${state.theme}"></logs-panel>
         <div class="cluster-status">
           <span class="connection-indicator"></span>
           <span>${escapeHtml(clusterStatus)}</span>
@@ -1007,7 +1010,7 @@ function render() {
   `;
 
   createIcons({ icons });
-  bindEvents(selected, terminalContextName);
+  bindEvents(selected, terminalContextName, resources);
 }
 
 function settingsPageActions() {
@@ -1166,9 +1169,17 @@ function renderTable(resources: KubeResource[]): string {
                 <td>
                   <div class="name-cell">
                     <span class="status-dot ${tone}"></span>
-                    <div>
+                    <div class="name-cell-main">
                       <strong>${escapeHtml(resourceName(resource))}</strong>
                       <span></span>
+                    </div>
+                    <div class="name-cell-actions">
+                      <button class="name-cell-action" type="button" data-resource-action="details" aria-label="Details" title="Details">
+                        <i data-lucide="info" aria-hidden="true"></i>
+                      </button>
+                      <button class="name-cell-action" type="button" data-resource-action="logs" aria-label="Logs" title="Logs">
+                        <i data-lucide="logs" aria-hidden="true"></i>
+                      </button>
                     </div>
                   </div>
                 </td>
@@ -1206,6 +1217,7 @@ export const contextLabel = dataplane.contextLabel;
 function bindEvents(
   selectedResource: KubeResource | undefined,
   terminalContextName: string,
+  visibleResources: KubeResource[],
 ) {
   document.querySelector('terminal-panel')?.addEventListener('panel-state-change', (event) => {
     state.terminalPanelOpen = (event as CustomEvent<boolean>).detail;
@@ -1240,6 +1252,18 @@ function bindEvents(
     onClose: () => {
       state.selectedResourceId = '';
       render();
+    },
+    onLogs: (opener) => {
+      if (selectedResource) {
+        const logsPanel = document.querySelector<LogsPanel>('logs-panel');
+        void logsPanel?.openFor(
+          selectedResource,
+          state.selectedKind,
+          state.selectedContextId,
+          window.kubeApi,
+          opener,
+        );
+      }
     },
     onCopy: (text) => {
       void navigator.clipboard.writeText(text);
@@ -1384,6 +1408,37 @@ function bindEvents(
     });
   });
 
+  document.querySelectorAll<HTMLButtonElement>('.name-cell-action').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const row = button.closest<HTMLTableRowElement>('tr');
+      const id = row?.dataset.resourceId;
+      const resource = visibleResources.find((item) => resourceId(item) === id);
+      if (!resource || !id) {
+        return;
+      }
+
+      if (button.dataset.resourceAction === 'details') {
+        state.selectedResourceId = id;
+        render();
+        return;
+      }
+
+      if (button.dataset.resourceAction === 'logs') {
+        const logsPanel = document.querySelector<LogsPanel>('logs-panel');
+        if (logsPanel) {
+          void logsPanel.openFor(
+            resource,
+            state.selectedKind,
+            state.selectedContextId,
+            window.kubeApi,
+            button,
+          );
+        }
+      }
+    });
+  });
+
   document.querySelectorAll<HTMLButtonElement>('.sort-button').forEach((button) => {
     button.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -1401,11 +1456,6 @@ function bindEvents(
 
       render();
     });
-  });
-
-  document.querySelector<HTMLButtonElement>('#close-inspector')?.addEventListener('click', () => {
-    state.selectedResourceId = '';
-    render();
   });
 
   document.querySelector<HTMLSelectElement>('#namespace')?.addEventListener('change', (event) => {
@@ -1443,25 +1493,6 @@ function bindEvents(
     render();
   });
 
-  document.querySelector<HTMLButtonElement>('#copy-name')?.addEventListener('click', () => {
-    const resource = dataplane.selectedResource(
-      dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query),
-      state.selectedResourceId,
-    );
-    if (resource) {
-      void navigator.clipboard.writeText(resourceName(resource));
-    }
-  });
-
-  document.querySelector<HTMLButtonElement>('#copy-manifest')?.addEventListener('click', () => {
-    const resource = dataplane.selectedResource(
-      dataplane.getVisibleResources(state.snapshot, state.selectedKind, state.namespace, state.query),
-      state.selectedResourceId,
-    );
-    if (resource) {
-      void navigator.clipboard.writeText(formatManifest(resource));
-    }
-  });
 }
 
 /**

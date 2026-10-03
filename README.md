@@ -44,6 +44,10 @@ Expand a feature to view its Playwright screenshot. The same test suite covers e
 
 - **Dashboard:** Cluster health summaries, context-aware kubectl terminal, and CLI availability.
 	<details><summary>View Dashboard screenshot</summary><img src="assets/snapshots/01-dashboard.png" alt="Dashboard with health summaries and terminal" width="640"></details>
+- **Terminal panel:** Run context-bound kubectl commands and inspect highlighted command output.
+	<details><summary>View terminal panel screenshot</summary><img src="assets/snapshots/28-terminal-panel.png" alt="Terminal panel showing a kubectl pod list command and output" width="640"></details>
+- **Resource logs:** Open recent container logs for a Pod or workload from its Logs action.
+	<details><summary>View logs panel screenshot</summary><img src="assets/snapshots/29-logs-panel.png" alt="Logs panel showing recent output from a Pod" width="640"></details>
 - **Nodes:** Readiness, roles, taints, Kubernetes version, CPU, memory, and age.
 	<details><summary>View Nodes screenshot</summary><img src="assets/snapshots/02-nodes.png" alt="Nodes resource view" width="640"></details>
 - **Namespaces:** Namespace status, age, and label summary.

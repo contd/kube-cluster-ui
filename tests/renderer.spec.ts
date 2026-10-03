@@ -214,6 +214,35 @@ test.describe('Orbita views', () => {
     await expect(page.locator('.status-bar')).toBeVisible();
   });
 
+  test('captures terminal and resource logs panels for the README', async ({ page }) => {
+    await page.evaluate(() => {
+      if (window.kubeApi) {
+        window.kubeApi.runKubectl = async (command) => ({
+          stdout: command.startsWith('kubectl logs ')
+            ? '2026-10-02T12:00:00Z Started container api\n2026-10-02T12:00:01Z Listening on :8080'
+            : 'NAMESPACE  NAME      READY  STATUS   RESTARTS  AGE\ndefault    test-pod  1/1    Running  0         2m',
+          stderr: '',
+          exitCode: 0,
+        });
+      }
+    });
+
+    await page.getByRole('button', { name: 'Open kubectl terminal' }).click();
+    await page.locator('#kubectl-command').fill('kubectl get pods -A');
+    await page.locator('#kubectl-run').click();
+    await expect(page.locator('#kubectl-output')).toContainText('test-pod');
+    await page.screenshot({ path: 'assets/snapshots/28-terminal-panel.png', fullPage: true });
+
+    await page.locator('terminal-panel').locator('.panel-close').click();
+    await openNavigationItem(page, 'pods');
+    const podRow = page.locator('tbody tr').first();
+    await podRow.locator('.name-cell').hover();
+    await podRow.locator('.name-cell').getByRole('button', { name: 'Logs' }).click();
+    await expect(page.getByRole('dialog', { name: 'Logs for Pod: test-pod' })).toBeVisible();
+    await expect(page.locator('logs-panel').locator('.output')).toContainText('Listening on :8080');
+    await page.screenshot({ path: 'assets/snapshots/29-logs-panel.png', fullPage: true });
+  });
+
   test('hides zero nav counts until a resource collection loads', async ({ page }) => {
     const clusterRoles = page.locator('.nav-item[data-kind="clusterroles"]');
     await expect(clusterRoles.locator('.nav-count')).toHaveCount(0);
@@ -582,8 +611,97 @@ test.describe('Orbita views', () => {
     await expect(page.locator('#manifest')).toContainText('metadata:');
     await expect(page.locator('#manifest')).not.toContainText('managedFields:');
 
+    const titleOrder = await page.locator('.inspector-title-row').evaluate((row) => {
+      const heading = row.querySelector('h2');
+      const copy = row.querySelector('#copy-name');
+      return Boolean(heading && copy && (
+        heading.compareDocumentPosition(copy) & Node.DOCUMENT_POSITION_FOLLOWING
+      ));
+    });
+    expect(titleOrder).toBe(true);
+    const actions = page.locator('.inspector-actions');
+    await expect(actions.getByRole('button', { name: 'Open logs' })).toBeVisible();
+    const logCloseOrder = await actions.evaluate((container) => {
+      const logs = container.querySelector('#inspector-open-logs');
+      const close = container.querySelector('#close-inspector');
+      return Boolean(logs && close && (
+        logs.compareDocumentPosition(close) & Node.DOCUMENT_POSITION_FOLLOWING
+      ));
+    });
+    expect(logCloseOrder).toBe(true);
+
+    await actions.getByRole('button', { name: 'Open logs' }).click();
+    await expect(page.getByRole('dialog', { name: 'Logs for Pod: test-pod' })).toBeVisible();
+    await page.locator('logs-panel').locator('.close').click();
+    await expect(page.locator('.inspector')).toHaveClass(/open/);
+
     await page.locator('#close-inspector').click();
     await expect(page.locator('.inspector')).not.toHaveClass(/open/);
+  });
+
+  test('name actions open resource details and logs', async ({ page }) => {
+    await page.evaluate(() => {
+      if (window.kubeApi) {
+        const getSnapshot = window.kubeApi.getSnapshot;
+        window.kubeApi.getSnapshot = async (namespace, contextId) => {
+          const snapshot = await getSnapshot(namespace, contextId);
+          snapshot.resources.pods?.forEach((pod) => {
+            delete pod.kind;
+          });
+          return snapshot;
+        };
+        window.kubeApi.runKubectl = async (command, contextId) => {
+          document.documentElement.dataset.lastLogsCommand = command;
+          document.documentElement.dataset.lastLogsContext = contextId || '';
+          if (command.startsWith('kubectl get pods ')) {
+            return { stdout: 'default test-pod\n', stderr: '', exitCode: 0 };
+          }
+          if (command.includes('pod/test-pod') && command.includes('--tail=200')) {
+            return { stdout: 'node container log output', stderr: '', exitCode: 0 };
+          }
+          return { stdout: 'container log output', stderr: '', exitCode: 0 };
+        };
+      }
+    });
+    await page.locator('#refresh').click();
+    await openNavigationItem(page, 'pods');
+
+    let row = page.locator('tbody tr').first();
+    const resourceName = await row.locator('.name-cell strong').innerText();
+    const nameCell = row.locator('.name-cell');
+    await expect(nameCell.locator('.name-cell-actions')).toHaveCSS('opacity', '0');
+    await nameCell.hover();
+    await expect(nameCell.getByRole('button', { name: 'Details' })).toBeVisible();
+    await expect(nameCell.getByRole('button', { name: 'Logs' })).toBeVisible();
+    await nameCell.getByRole('button', { name: 'Details' }).click();
+    await expect(page.locator('.inspector')).toHaveClass(/open/);
+    await expect(page.locator('.inspector h2')).toHaveText(resourceName);
+
+    await page.locator('#close-inspector').click();
+    row = page.locator('tbody tr').first();
+    await row.locator('.name-cell').hover();
+    await row.locator('.name-cell').getByRole('button', { name: 'Logs' }).click();
+    await expect(page.locator('logs-panel')).toHaveAttribute('open', '');
+    await expect(page.locator('logs-panel').locator('.backdrop')).toBeVisible();
+    const logsPanel = page.getByRole('dialog', { name: `Logs for Pod: ${resourceName}` });
+    await expect(logsPanel).toBeVisible();
+    await expect(page.locator('logs-panel').locator('.output')).toHaveText('container log output');
+    await expect(page.locator('.inspector')).not.toHaveClass(/open/);
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-last-logs-command',
+      `kubectl logs pod/${resourceName} --namespace=default --all-containers=true --tail=500`,
+    );
+    await expect(page.locator('html')).toHaveAttribute('data-last-logs-context', 'playwright::test-cluster');
+
+    await page.locator('logs-panel').locator('.close').click();
+    await openNavigationItem(page, 'nodes');
+    row = page.locator('tbody tr').first();
+    const nodeName = await row.locator('.name-cell strong').innerText();
+    await row.locator('.name-cell').hover();
+    await row.locator('.name-cell').getByRole('button', { name: 'Logs' }).click();
+    await expect(page.getByRole('dialog', { name: `Logs for Node: ${nodeName}` })).toBeVisible();
+    await expect(page.locator('logs-panel').locator('.output')).toContainText('node container log output');
+    await expect(page.locator('html')).toHaveAttribute('data-last-logs-command', 'kubectl logs pod/test-pod --namespace=default --all-containers=true --tail=200');
   });
 
   // Confirms that clicking the Name column toggles between descending and
